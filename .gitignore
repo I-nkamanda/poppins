@@ -158,7 +158,7 @@ Desktop.ini
 # Vector DB
 # 벡터 DB 파일들은 Git LFS로 관리됩니다.
 # *.faiss (LFS 사용 시 주석 처리)
-*.pkl
+# *.pkl/
 
 
 # Temporary files
