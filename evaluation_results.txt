@@ -1,0 +1,63 @@
+==================================================
+RAG Retrieval Performance Evaluation
+==================================================
+
+🔎 Query: '파이썬 리스트 슬라이싱하는 방법'
+⏱️ Retrieval Time: 0.5700s
+  [Chunk 1] Source: 파이썬을_이용한_웹_크롤링과_스크레이핑.pdf (p.1)
+    Content: 파이썬을 이용한 웹 크롤링과 스크레이핑데이터 수집과 분석을 위한 실전 가이드...
+------------------------------
+  [Chunk 2] Source: 누워서_읽는_알고리즘.pdf (p.0)
+    Content: 프로그래밍 상상력을 키워주는 알고리즘 이야기 누워서알고리즘읽는 임백준지음...
+------------------------------
+  [Chunk 3] Source: 머신러닝_딥러닝_실전개발_입문.pdf (p.1)
+    Content: 파이썬을 이용한머신러닝，입러닝 실전 개발 입문 웹 크#링과 스크레이핑부터머신러닝 ■ 입러닝까지 체계적으로 배우기...
+------------------------------
+
+🔎 Query: '함수에서 가변 인자(*args) 사용법'
+⏱️ Retrieval Time: 0.3856s
+  [Chunk 1] Source: 핸즈온머신러닝.pdf (p.420)
+    Content: 프린트하기 위해 다음 명령을 실행합니다. $ python3 simple_client.py grpc:"machine-a.example.com:2222 init 1.0 이제 다음 명령으로 클라이언트를 실행한다면 머신 13에 있는 서버에 연결해서 같은 변수 x를  재사용할 ...
+------------------------------
+  [Chunk 2] Source: 파이썬_날코딩으로_알고짜는_딥러닝.pdf (p.388)
+    Content: 호출된 replace_arg() 함수에서는 exp값이 리스트나 튜플 구조면 ©에서, 사전 구조면 ©에  서 알맞은 방법으로 반복문을 수행해 발견되는 매개변수 성분을 지정된 인수로 대체한다. 이때  매개변수 대체는 exp 성분 가운데 ‘#〈name〉’ 형태로 표현된 항목...
+------------------------------
+  [Chunk 3] Source: Beginning Programming with Python for Dummies.pdf (p.126)
+    Content: your function. It pays to work toward this goal whenever you can because  functions with a fixed number of arguments are easier to troubleshoot later....
+------------------------------
+
+🔎 Query: '파일 열고 닫기 (open, close)'
+⏱️ Retrieval Time: 0.3959s
+  [Chunk 1] Source: OpenCV4로_배우는_컴퓨터_비전과_머신_러닝.pdf (p.379)
+    Content: 코드 11-1 의 open_close() 함수 실행 결과를 그림 U-12에 나타냈습니다. 그림 ll-12(a)는 입력  영상으로 사용한 milkdrop.bmp 파일이고, 그림 l l-12(b)는 오츠 알고리즘으로 이진화한 bin  영상입니다. 그림 1 l-12(c)는 ...
+------------------------------
+  [Chunk 2] Source: 파이썬_자료구조와_알고리즘.pdf (p.120)
+    Content: lines.appencK line) return lines def write_data(lines, filename):  fh = None with open(filename, "w") as fh:  for line in lines:  fh.write(line) def r...
+------------------------------
+  [Chunk 3] Source: 누워서_읽는_알고리즘.pdf (p.25)
+    Content: 짧은 시간이 흐르고，화면에 나타난 결과를 보았을 때 필자의 가슴은  그만 철렁 내려앉고 말았다. 화면에 나타난 것은 정상적인 페이지가 아니  라 페이지 수가 이미 최댓값에 도달했으므로 더 이상의 페이지를 열 수 없  다는 오류 메시지였다. 모든 경우에 대해서 완벽하게 ...
+------------------------------
+
+🔎 Query: 'try except 예외 처리'
+⏱️ Retrieval Time: 0.4052s
+  [Chunk 1] Source: 파이썬_자료구조와_알고리즘.pdf (p.129)
+    Content: 다음은^쁜 예다. def ConnectToNextPort(self, minimum): """사용 가능한 다음 포트에 연결한다, 새 minimum 포트를 반환한다."""  assert minimum > 1024, '1025 이상의 포트를 입력해야 합니다.’  port =...
+------------------------------
+  [Chunk 2] Source: 파이썬_자료구조와_알고리즘.pdf (p.126)
+    Content: 4.4 오류 처리 파이씬 코드를 컴파일할 때. 발생할 수 있는 두 가지 종류의 오류가 있다. 구문 오  류，mcm’r(구문 분석오류)와 예외…"(실행 중 발견되는 오류로 무조건적  으로 치명적인 것은 아니다)다. 구문 오류가 있으면 컴파일이 아예 안 되지만. 예  외는...
+------------------------------
+  [Chunk 3] Source: pythoncrashcourse2ndedition.pdf (p.237)
+    Content: execution: The file alice.txt has about 29465 words.  Sorry, the file siddhartha.txt does not exist.  The file moby_dick.txt has about 215830 words. T...
+------------------------------
+
+🔎 Query: '딕셔너리 키와 값 순회하기'
+⏱️ Retrieval Time: 0.4058s
+  [Chunk 1] Source: 파이썬을_이용한_웹_크롤링과_스크레이핑.pdf (p.1)
+    Content: 파이썬을 이용한 웹 크롤링과 스크레이핑데이터 수집과 분석을 위한 실전 가이드...
+------------------------------
+  [Chunk 2] Source: 누워서_읽는_알고리즘.pdf (p.0)
+    Content: 프로그래밍 상상력을 키워주는 알고리즘 이야기 누워서알고리즘읽는 임백준지음...
+------------------------------
+  [Chunk 3] Source: 머신러닝_딥러닝_실전개발_입문.pdf (p.1)
+    Content: 파이썬을 이용한머신러닝，입러닝 실전 개발 입문 웹 크#링과 스크레이핑부터머신러닝 ■ 입러닝까지 체계적으로 배우기...
+------------------------------

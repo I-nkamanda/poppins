@@ -1,0 +1,306 @@
+{
+  "651442b1ca7073fd6d5c1d479d09a3b2": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\automatetheboringstuffwithpython2ndedition.pdf",
+    "file_name": "automatetheboringstuffwithpython2ndedition.pdf",
+    "mtime": 1763806868.6902008,
+    "size": 14269683,
+    "chunks": 1467,
+    "strategy": "semantic"
+  },
+  "d651894560461de71d370d95379e9569": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\Beginning Programming with Python for Dummies.pdf",
+    "file_name": "Beginning Programming with Python for Dummies.pdf",
+    "mtime": 1763806868.1555655,
+    "size": 10936695,
+    "chunks": 1083,
+    "strategy": "semantic"
+  },
+  "7a5cad1cc807bbbe2c323c0ba7156a8e": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\beginningprogrammingwithpythonfordummies3rdedition.pdf",
+    "file_name": "beginningprogrammingwithpythonfordummies3rdedition.pdf",
+    "mtime": 1763806868.8106823,
+    "size": 12556516,
+    "chunks": 1465,
+    "strategy": "semantic"
+  },
+  "1ebb8d598e83ca54e49476339d0b65f1": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\beyondthebasicstuffwithpython.pdf",
+    "file_name": "beyondthebasicstuffwithpython.pdf",
+    "mtime": 1763806868.86295,
+    "size": 7893063,
+    "chunks": 914,
+    "strategy": "semantic"
+  },
+  "d83be9b132af3022a13426eb7adebb15": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\bigbookofsmallpythonprojects.pdf",
+    "file_name": "bigbookofsmallpythonprojects.pdf",
+    "mtime": 1763806868.9236014,
+    "size": 10745445,
+    "chunks": 1852,
+    "strategy": "semantic"
+  },
+  "f0aa68b2209e3ac2b974e59e93a149e2": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\computer_vision.pdf",
+    "file_name": "computer_vision.pdf",
+    "mtime": 1763806869.340127,
+    "size": 41682578,
+    "chunks": 1726,
+    "strategy": "semantic"
+  },
+  "ddb241b566e4f15885981f054119eb00": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\crackingcodeswithpython.pdf",
+    "file_name": "crackingcodeswithpython.pdf",
+    "mtime": 1763806869.3928561,
+    "size": 8567072,
+    "chunks": 1194,
+    "strategy": "semantic"
+  },
+  "23d89881681a4eac09b0c700ecee2da4": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\Data Structures and Algorithms with Python.pdf",
+    "file_name": "Data Structures and Algorithms with Python.pdf",
+    "mtime": 1763806868.2299933,
+    "size": 10470664,
+    "chunks": 1514,
+    "strategy": "semantic"
+  },
+  "ff7211fcae967c1a6b07b586e7cf7744": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\diveintoalgorithms_apythonicadventurefortheintrepidbeginner.pdf",
+    "file_name": "diveintoalgorithms_apythonicadventurefortheintrepidbeginner.pdf",
+    "mtime": 1763806869.4443634,
+    "size": 8516121,
+    "chunks": 596,
+    "strategy": "semantic"
+  },
+  "5eac18bd3b65826d390f6f1f731682a2": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\doingmathwithpython.pdf",
+    "file_name": "doingmathwithpython.pdf",
+    "mtime": 1763806869.4856365,
+    "size": 4768776,
+    "chunks": 543,
+    "strategy": "semantic"
+  },
+  "171decbac2c1f9bfb2c02f3a98de7f60": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\impracticalpythonprojects.pdf",
+    "file_name": "impracticalpythonprojects.pdf",
+    "mtime": 1763806869.591061,
+    "size": 13623061,
+    "chunks": 1043,
+    "strategy": "semantic"
+  },
+  "5e05733dc09a3710d5055188e30f322e": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\inventyourowncomputergameswithpython4thedition.pdf",
+    "file_name": "inventyourowncomputergameswithpython4thedition.pdf",
+    "mtime": 1763806869.6456046,
+    "size": 8205458,
+    "chunks": 1184,
+    "strategy": "semantic"
+  },
+  "cd2f8b26172131e67268325062d23acc": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\learnpythonvisually_creativecodingwithprocessingpy.pdf",
+    "file_name": "learnpythonvisually_creativecodingwithprocessingpy.pdf",
+    "mtime": 1763806869.7343695,
+    "size": 14446534,
+    "chunks": 837,
+    "strategy": "semantic"
+  },
+  "84aa44d699727ba5c0a63ecc5d8353c5": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\makepythontalk.pdf",
+    "file_name": "makepythontalk.pdf",
+    "mtime": 1763806869.7879486,
+    "size": 7493380,
+    "chunks": 906,
+    "strategy": "semantic"
+  },
+  "65764f9298f2a86601646968cd567685": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\object-orientedpython_nsp.pdf",
+    "file_name": "object-orientedpython_nsp.pdf",
+    "mtime": 1763806869.8495562,
+    "size": 11708205,
+    "chunks": 881,
+    "strategy": "semantic"
+  },
+  "a241f29b0f4181709100febd60d81062": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\OpenCV4로_배우는_컴퓨터_비전과_머신_러닝.pdf",
+    "file_name": "OpenCV4로_배우는_컴퓨터_비전과_머신_러닝.pdf",
+    "mtime": 1763806868.5825613,
+    "size": 43364193,
+    "chunks": 1469,
+    "strategy": "semantic"
+  },
+  "311ae479de062da4cae5adf9eeba1a4a": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\practicaldeeplearning_apython-basedintroduction.pdf",
+    "file_name": "practicaldeeplearning_apython-basedintroduction.pdf",
+    "mtime": 1763806869.957647,
+    "size": 16817140,
+    "chunks": 2177,
+    "strategy": "semantic"
+  },
+  "13d06c86cc377ab628580162318c1b5d": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\pythoncrashcourse2ndedition.pdf",
+    "file_name": "pythoncrashcourse2ndedition.pdf",
+    "mtime": 1763806870.0008757,
+    "size": 7238584,
+    "chunks": 1294,
+    "strategy": "semantic"
+  },
+  "6bc346343cc01deb722e19389c326610": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\pythonone-liners.pdf",
+    "file_name": "pythonone-liners.pdf",
+    "mtime": 1763806870.024219,
+    "size": 2658149,
+    "chunks": 519,
+    "strategy": "semantic"
+  },
+  "2f9948375b1cf1c0709570f3ca196a11": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\pythonplayground_geekyprojectsforthecuriousprogrammer.pdf",
+    "file_name": "pythonplayground_geekyprojectsforthecuriousprogrammer.pdf",
+    "mtime": 1763806870.0885243,
+    "size": 12046743,
+    "chunks": 661,
+    "strategy": "semantic"
+  },
+  "922ffa9a44c716055bf9f3f2bb20d8cc": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\realworldpython.pdf",
+    "file_name": "realworldpython.pdf",
+    "mtime": 1763806870.1786363,
+    "size": 17626247,
+    "chunks": 843,
+    "strategy": "semantic"
+  },
+  "b1d89b9d3a805dfca01ec1b2ca78ce63": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\seriouspython.pdf",
+    "file_name": "seriouspython.pdf",
+    "mtime": 1763806870.2041097,
+    "size": 5098079,
+    "chunks": 689,
+    "strategy": "semantic"
+  },
+  "238a74e193fa9c39e0ab189c40f6e7aa": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\누워서_읽는_알고리즘.pdf",
+    "file_name": "누워서_읽는_알고리즘.pdf",
+    "mtime": 1763806870.3333585,
+    "size": 14077287,
+    "chunks": 609,
+    "strategy": "semantic"
+  },
+  "bddb419b59a8af0a6330a0b56b58a833": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\딥러닝_제대로_시작하기.pdf",
+    "file_name": "딥러닝_제대로_시작하기.pdf",
+    "mtime": 1763806870.456305,
+    "size": 14291496,
+    "chunks": 512,
+    "strategy": "semantic"
+  },
+  "dcf9d97aeafc6e820aaa5590345e2109": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\러닝_텐서플로.pdf",
+    "file_name": "러닝_텐서플로.pdf",
+    "mtime": 1763806870.616464,
+    "size": 18495653,
+    "chunks": 631,
+    "strategy": "semantic"
+  },
+  "7416f4da304ba99187c59cf6a75171fb": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\매니징_쿠버네티스.pdf",
+    "file_name": "매니징_쿠버네티스.pdf",
+    "mtime": 1763806870.7562673,
+    "size": 14378626,
+    "chunks": 539,
+    "strategy": "semantic"
+  },
+  "765b94cafd7a38e43e13dcc2feda24fa": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\머신러닝_딥러닝_실전개발_입문.pdf",
+    "file_name": "머신러닝_딥러닝_실전개발_입문.pdf",
+    "mtime": 1763806871.0503156,
+    "size": 29815366,
+    "chunks": 1047,
+    "strategy": "semantic"
+  },
+  "73d7b76764ead2140a4d44e2a71700bd": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\신경망설계_2판.pdf",
+    "file_name": "신경망설계_2판.pdf",
+    "mtime": 1763806871.554409,
+    "size": 51089602,
+    "chunks": 2171,
+    "strategy": "semantic"
+  },
+  "21611414c7635317f2447e2bb8bc3d1b": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\실전_예제로_배우는_GAN.pdf",
+    "file_name": "실전_예제로_배우는_GAN.pdf",
+    "mtime": 1763806871.728294,
+    "size": 16454287,
+    "chunks": 659,
+    "strategy": "semantic"
+  },
+  "020f70e1cd0845691664fd1344137c0d": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\자연어_처리_쿡북_with_파이썬.pdf",
+    "file_name": "자연어_처리_쿡북_with_파이썬.pdf",
+    "mtime": 1763806871.9364264,
+    "size": 21191838,
+    "chunks": 821,
+    "strategy": "semantic"
+  },
+  "ab13c7ac52304369faa5e9e8c18251d7": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\자율주행자동차만들기.pdf",
+    "file_name": "자율주행자동차만들기.pdf",
+    "mtime": 1763806872.1365569,
+    "size": 19387713,
+    "chunks": 773,
+    "strategy": "semantic"
+  },
+  "ab3622d28452d2bafabb6b2e5e23108d": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\컴퓨터_비전과_딥러닝.pdf",
+    "file_name": "컴퓨터_비전과_딥러닝.pdf",
+    "mtime": 1763806872.3584507,
+    "size": 20719436,
+    "chunks": 784,
+    "strategy": "semantic"
+  },
+  "35483922904ec634404b8e0cd5faad87": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\파이썬_날코딩으로_알고짜는_딥러닝.pdf",
+    "file_name": "파이썬_날코딩으로_알고짜는_딥러닝.pdf",
+    "mtime": 1763806872.865249,
+    "size": 49847509,
+    "chunks": 1500,
+    "strategy": "semantic"
+  },
+  "0001b125607b5ef172227b609e04dea5": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\파이썬_자료구조와_알고리즘.pdf",
+    "file_name": "파이썬_자료구조와_알고리즘.pdf",
+    "mtime": 1763806873.026039,
+    "size": 16748080,
+    "chunks": 671,
+    "strategy": "semantic"
+  },
+  "e8befe03fea3eecf51dda46592fc4072": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\파이썬을_이용한_웹_크롤링과_스크레이핑.pdf",
+    "file_name": "파이썬을_이용한_웹_크롤링과_스크레이핑.pdf",
+    "mtime": 1763806873.3239856,
+    "size": 29866367,
+    "chunks": 1090,
+    "strategy": "semantic"
+  },
+  "bd5510505fd9da50dba0e914d8cd475c": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\파이썬을_활용한_딥러닝_전이학습.pdf",
+    "file_name": "파이썬을_활용한_딥러닝_전이학습.pdf",
+    "mtime": 1763806873.6188025,
+    "size": 29426440,
+    "chunks": 978,
+    "strategy": "semantic"
+  },
+  "b53f895c70d50921430c1a4b65122884": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\파이토치첫걸음.pdf",
+    "file_name": "파이토치첫걸음.pdf",
+    "mtime": 1763806873.7638247,
+    "size": 14108944,
+    "chunks": 452,
+    "strategy": "semantic"
+  },
+  "1a1b6dc20a3f192374ebd8af7928469c": {
+    "file_path": "C:\\Users\\Lee\\Desktop\\Codyssey Project\\pop_pins_ii\\Pop-pins2\\RAG vector generator\\pdfs\\핸즈온머신러닝.pdf",
+    "file_name": "핸즈온머신러닝.pdf",
+    "mtime": 1763806874.2295794,
+    "size": 48254591,
+    "chunks": 1795,
+    "strategy": "semantic"
+  }
+}
