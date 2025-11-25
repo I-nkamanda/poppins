@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # PopPins II
 
 - **AI 모델**: Gemini 2.5 Flash / Gemini 2.0 Flash Exp
