@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import asyncio
+from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
 import json
@@ -13,7 +14,7 @@ import json
 # DB imports
 from sqlalchemy.orm import Session
 from app.database import engine, Base, get_db
-from app.models import GenerationLog
+from app.models import GenerationLog, QuizResult, UserFeedback
 
 # Import ContentGenerator service
 from app.services.generator import ContentGenerator
@@ -163,6 +164,12 @@ class HistoryDetail(HistoryItem):
     generated_content: str
 
 
+class FeedbackRequest(BaseModel):
+    chapter_title: str
+    rating: int  # 1-5
+    comment: Optional[str] = None
+
+
 # 메인 API 엔드포인트
 
 @app.post("/generate-course", response_model=CourseResponse)
@@ -209,25 +216,33 @@ async def generate_chapter_content_only(request: ChapterRequest):
 
     logger.info(f"챕터 콘텐츠 생성 시작: {request.chapter_title}")
     try:
+        # Fetch learning context (adaptive learning)
+        learning_context = generator.get_learning_context(request.course_title)
+        if learning_context:
+            logger.info(f"학습 컨텍스트 적용: {len(learning_context)} chars")
+
         # 병렬로 생성 (개념, 실습, 퀴즈)
         results = await asyncio.gather(
             generator.generate_concept(
                 course_title=request.course_title,
                 course_desc=request.course_description,
                 chapter_title=request.chapter_title,
-                chapter_desc=request.chapter_description
+                chapter_desc=request.chapter_description,
+                learning_context=learning_context
             ),
             generator.generate_exercise(
                 course_title=request.course_title,
                 course_desc=request.course_description,
                 chapter_title=request.chapter_title,
-                chapter_desc=request.chapter_description
+                chapter_desc=request.chapter_description,
+                learning_context=learning_context
             ),
             generator.generate_quiz(
                 course_title=request.course_title,
                 chapter_title=request.chapter_title,
                 chapter_desc=request.chapter_description,
-                course_prompt=request.course_title
+                course_prompt=request.course_title,
+                learning_context=learning_context
             ),
             return_exceptions=True,
         )
@@ -392,9 +407,9 @@ class QuizGradingRequest(BaseModel):
 
 
 @app.post("/grade-quiz")
-async def grade_quiz(request: QuizGradingRequest):
+async def grade_quiz(request: QuizGradingRequest, db: Session = Depends(get_db)):
     """
-    퀴즈 답안을 AI로 채점합니다.
+    퀴즈 답안을 AI로 채점하고 결과를 저장합니다.
     """
     if not generator:
         raise HTTPException(status_code=500, detail="ContentGenerator not initialized")
@@ -406,10 +421,44 @@ async def grade_quiz(request: QuizGradingRequest):
             chapter_title=request.chapter_title,
             chapter_desc=request.chapter_description
         )
+
+        # Save result to DB
+        try:
+            quiz_result = QuizResult(
+                chapter_title=request.chapter_title,
+                score=result.get("score", 0),
+                weak_points=json.dumps(result.get("improvements", []), ensure_ascii=False),
+                timestamp=datetime.utcnow()
+            )
+            db.add(quiz_result)
+            db.commit()
+        except Exception as db_e:
+            logger.error(f"Failed to save quiz result: {db_e}")
+
         return result
     except Exception as e:
         logger.error(f"퀴즈 채점 실패: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"퀴즈 채점 실패: {str(e)}")
+
+
+@app.post("/feedback")
+def submit_feedback(request: FeedbackRequest, db: Session = Depends(get_db)):
+    """
+    사용자 피드백을 저장합니다.
+    """
+    try:
+        feedback = UserFeedback(
+            chapter_title=request.chapter_title,
+            rating=request.rating,
+            comment=request.comment,
+            timestamp=datetime.utcnow()
+        )
+        db.add(feedback)
+        db.commit()
+        return {"status": "success", "message": "Feedback saved"}
+    except Exception as e:
+        logger.error(f"피드백 저장 실패: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"피드백 저장 실패: {str(e)}")
 
 
 # History Endpoints

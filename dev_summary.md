@@ -38,6 +38,22 @@
 
 ---
 
+## [v1.8.0] - 2025-11-25 적응형 학습 시스템 (Adaptive Learning)
+
+### 주요 변경 사항
+
+1. **피드백 루프 (Feedback Loop)**
+   - `QuizResult`: 퀴즈 점수와 취약점(AI 피드백)을 DB에 저장
+   - `UserFeedback`: 사용자의 별점과 코멘트를 DB에 저장
+   - `POST /feedback` 엔드포인트 추가
+
+2. **개인화된 콘텐츠 생성 (Personalization)**
+   - `ContentGenerator.get_learning_context()`: 최근 퀴즈 성적과 피드백을 조회하여 컨텍스트 문자열 생성
+   - 생성 프롬프트에 `[User Learning Context]` 섹션 추가
+   - AI가 이전 성적(예: 낮은 점수)과 피드백(예: "너무 어려움")을 반영하여 난이도와 설명 방식을 조절
+
+---
+
 ## [v1.7.0] - 2025-11-25 콘텐츠 이력 관리 (History)
 
 ### 주요 변경 사항

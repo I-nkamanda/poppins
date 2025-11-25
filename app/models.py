@@ -13,3 +13,21 @@ class GenerationLog(Base):
     generated_content = Column(Text)  # JSON string of the result
     model_name = Column(String)
     latency_ms = Column(Integer, nullable=True)
+
+class QuizResult(Base):
+    __tablename__ = "quiz_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chapter_title = Column(String, index=True)
+    score = Column(Integer)
+    weak_points = Column(Text)  # JSON string of weak points
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+class UserFeedback(Base):
+    __tablename__ = "user_feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chapter_title = Column(String, index=True)
+    rating = Column(Integer)  # 1-5
+    comment = Column(Text, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)

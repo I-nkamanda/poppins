@@ -1,5 +1,14 @@
 # 변경 이력
 
+## [1.8.0] - 2025-11-25
+
+### 기능 추가 (Feature)
+- **적응형 학습 시스템 (Adaptive Learning)**: 사용자의 퀴즈 성적과 피드백을 기반으로 다음 콘텐츠를 개인화하여 생성.
+- **피드백 루프 (Feedback Loop)**:
+  - `POST /feedback`: 챕터별 사용자 평점(1-5) 및 코멘트 저장.
+  - `QuizResult`: 퀴즈 점수 및 취약점 분석 결과 저장.
+- **컨텍스트 주입**: `ContentGenerator`가 이전 학습 이력을 조회하여 프롬프트에 반영 (`[User Learning Context]`).
+
 ## [1.7.0] - 2025-11-25
 
 ### 기능 추가 (Feature)

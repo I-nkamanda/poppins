@@ -158,24 +158,6 @@ API 정보를 반환합니다.
 
 #### 응답
 
-```json
-{
-  "message": "자습 과제 생성 API",
-  "version": "1.0.0",
-  "endpoints": {
-    "POST /generate-study-material": "공부 주제를 입력받아 자습 과제 생성"
-  }
-}
-```
-
-### GET /health
-
-서버 상태를 확인합니다.
-
-#### 응답
-
-```json
-{
   "status": "healthy"
 }
 ```
@@ -232,6 +214,33 @@ API 정보를 반환합니다.
   "latency_ms": 1500,
   "prompt_context": "...",
   "generated_content": "..."
+}
+```
+
+### POST /feedback
+
+사용자 피드백을 저장합니다.
+
+#### 요청
+
+**Content-Type:** `application/json`
+
+**Request Body:**
+
+```json
+{
+  "chapter_title": "string (필수)",
+  "rating": "integer (필수, 1-5)",
+  "comment": "string (선택)"
+}
+```
+
+#### 응답
+
+```json
+{
+  "status": "success",
+  "message": "Feedback saved"
 }
 ```
 

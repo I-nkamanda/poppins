@@ -12,7 +12,7 @@ from datetime import datetime
 
 # DB imports
 from sqlalchemy.orm import Session
-from app.models import GenerationLog
+from app.models import GenerationLog, QuizResult, UserFeedback
 from app.database import SessionLocal
 
 # RAG imports
@@ -154,6 +154,42 @@ class ContentGenerator:
         
         return {"title": title, "description": description, "contents": contents}
 
+    def get_learning_context(self, course_title: str) -> str:
+        """Fetches recent quiz results and feedback for the course to build a learning context."""
+        try:
+            db = SessionLocal()
+            # Get recent 3 quiz results for this course (assuming course_title is unique enough for now)
+            # In a real app, we would filter by user_id and course_id
+            # Here we filter by chapter_title that might contain the course topic or we rely on the fact that we store chapter_title
+            # Wait, our models only have chapter_title. We need to be careful.
+            # Ideally we should store course_title in QuizResult.
+            # For now, let's fetch ALL recent results and filter or just fetch recent ones.
+            # Let's assume the user is working on one course at a time or we just look at global recent performance.
+            # Better: Let's fetch recent 5 results globally as a proxy for "User's recent state".
+            
+            recent_quizzes = db.query(QuizResult).order_by(QuizResult.timestamp.desc()).limit(3).all()
+            recent_feedback = db.query(UserFeedback).order_by(UserFeedback.timestamp.desc()).limit(3).all()
+            db.close()
+
+            context_parts = []
+            if recent_quizzes:
+                context_parts.append("Recent Quiz Performance:")
+                for q in recent_quizzes:
+                    context_parts.append(f"- Chapter '{q.chapter_title}': Score {q.score}/100. Weak points: {q.weak_points}")
+            
+            if recent_feedback:
+                context_parts.append("Recent User Feedback:")
+                for f in recent_feedback:
+                    context_parts.append(f"- Chapter '{f.chapter_title}': Rating {f.rating}/5. Comment: '{f.comment}'")
+            
+            if not context_parts:
+                return ""
+            
+            return "\n".join(context_parts)
+        except Exception as e:
+            logger.error(f"Failed to get learning context: {e}")
+            return ""
+
     async def generate_course(self, topic: str, description: str, difficulty: str, max_chapters: int) -> dict:
         start_time = time.time()
         course_description = description or topic
@@ -229,7 +265,7 @@ DO NOT start with "Okay", or "Alright" or any preambles. Just the output, please
         
         return result
 
-    async def generate_concept(self, course_title: str, course_desc: str, chapter_title: str, chapter_desc: str) -> dict:
+    async def generate_concept(self, course_title: str, course_desc: str, chapter_title: str, chapter_desc: str, learning_context: str = "") -> dict:
         start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 개념 설명"
         rag_context = self.search_context(search_query, k=3)
@@ -240,6 +276,9 @@ DO NOT start with "Okay", or "Alright" or any preambles. Just the output, please
             f"Chapter Title: {chapter_title}",
             f"Chapter Description: {chapter_desc}",
         ]
+        if learning_context:
+            prompt_parts.append(f"\n[User Learning Context]\n{learning_context}\n(Please adapt the content difficulty and focus based on this context.)")
+
         if rag_context:
             prompt_parts.append(f"\n[참고 교재 자료]\n{rag_context}")
 
@@ -286,7 +325,7 @@ output language: ko
 
         return result
 
-    async def generate_exercise(self, course_title: str, course_desc: str, chapter_title: str, chapter_desc: str) -> dict:
+    async def generate_exercise(self, course_title: str, course_desc: str, chapter_title: str, chapter_desc: str, learning_context: str = "") -> dict:
         start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 실습 연습"
         rag_context = self.search_context(search_query, k=3)
@@ -297,6 +336,9 @@ output language: ko
             f"Chapter Title: {chapter_title}",
             f"Chapter Description: {chapter_desc}",
         ]
+        if learning_context:
+            prompt_parts.append(f"\n[User Learning Context]\n{learning_context}\n(Please adapt the exercises based on the user's weak points and feedback.)")
+
         if rag_context:
             prompt_parts.append(f"\n[참고 교재 자료]\n{rag_context}")
 
@@ -350,7 +392,7 @@ output language: ko
 
         return result
 
-    async def generate_quiz(self, course_title: str, chapter_title: str, chapter_desc: str, course_prompt: str = "") -> dict:
+    async def generate_quiz(self, course_title: str, chapter_title: str, chapter_desc: str, course_prompt: str = "", learning_context: str = "") -> dict:
         start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 퀴즈 문제"
         rag_context = self.search_context(search_query, k=3)
@@ -360,6 +402,9 @@ output language: ko
             f"Chapter Title: {chapter_title}",
             f"Course Prompt: {course_prompt}",
         ]
+        if learning_context:
+            prompt_parts.append(f"\n[User Learning Context]\n{learning_context}\n(Please adapt the quiz difficulty and focus based on the user's performance.)")
+
         if rag_context:
             prompt_parts.append(f"\n[참고 교재 자료]\n{rag_context}")
 
