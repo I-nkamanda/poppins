@@ -38,6 +38,21 @@
 
 ---
 
+## [v1.6.0] - 2025-11-25 코드 리팩토링
+
+### 주요 변경 사항
+
+1. **서비스 계층 분리 (Refactoring)**
+   - `app/services/generator.py`에 `ContentGenerator` 클래스 구현
+   - `main_with_RAG.py`의 비즈니스 로직을 서비스 모듈로 이동
+   - Gemini API 및 RAG 로직을 캡슐화하여 유지보수성 향상
+
+2. **프롬프트 관리 개선**
+   - 모든 생성 프롬프트를 `ContentGenerator` 클래스 내에서 통합 관리
+   - 향후 프롬프트 버전 관리 및 A/B 테스트 용이성 확보
+
+---
+
 ## [v1.5.0] - 2025-11-24 Semantic Chunking 구현
 
 ### 주요 변경 사항
