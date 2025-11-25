@@ -87,6 +87,7 @@ class StudyTopicRequest(BaseModel):
     difficulty: Optional[str] = "중급"
     max_chapters: Optional[int] = 3
     course_description: Optional[str] = None
+    selected_objective: Optional[str] = None  # New field for selected learning objective
 
 
 class ChapterRequest(BaseModel):
@@ -106,6 +107,7 @@ class ConceptResponse(BaseModel):
 class ExerciseResponse(BaseModel):
     title: str
     description: str
+    contents: str
     contents: str
 
 
@@ -159,9 +161,21 @@ class HistoryItem(BaseModel):
     latency_ms: Optional[int]
     # prompt_context and generated_content are excluded for list view to keep it light
 
+
 class HistoryDetail(HistoryItem):
     prompt_context: str
     generated_content: str
+
+
+class ObjectiveItem(BaseModel):
+    id: int
+    title: str
+    description: str
+    target_audience: str
+
+
+class ObjectivesResponse(BaseModel):
+    objectives: List[ObjectiveItem]
 
 
 class FeedbackRequest(BaseModel):
@@ -172,10 +186,27 @@ class FeedbackRequest(BaseModel):
 
 # 메인 API 엔드포인트
 
+@app.post("/generate-objectives", response_model=ObjectivesResponse)
+async def generate_objectives(request: StudyTopicRequest):
+    """
+    주제에 대한 3가지 다른 학습 목표/방향을 제안합니다.
+    """
+    if not generator:
+        raise HTTPException(status_code=500, detail="ContentGenerator not initialized")
+
+    try:
+        result = await generator.generate_learning_objectives(request.topic)
+        return ObjectivesResponse(**result)
+    except Exception as e:
+        logger.error(f"학습 목표 제안 실패: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"학습 목표 제안 실패: {str(e)}")
+
+
 @app.post("/generate-course", response_model=CourseResponse)
 async def generate_course_only(request: StudyTopicRequest):
     """
     1단계: 커리큘럼(목차)만 먼저 생성합니다. (빠름)
+    선택된 학습 목표가 있다면 반영합니다.
     """
     if not generator:
         raise HTTPException(status_code=500, detail="ContentGenerator not initialized")
@@ -185,7 +216,8 @@ async def generate_course_only(request: StudyTopicRequest):
             topic=request.topic,
             description=request.course_description or request.topic,
             difficulty=request.difficulty,
-            max_chapters=request.max_chapters
+            max_chapters=request.max_chapters,
+            selected_objective=request.selected_objective
         )
         return CourseResponse(**result)
     except Exception as e:

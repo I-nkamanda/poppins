@@ -190,7 +190,47 @@ class ContentGenerator:
             logger.error(f"Failed to get learning context: {e}")
             return ""
 
-    async def generate_course(self, topic: str, description: str, difficulty: str, max_chapters: int) -> dict:
+    async def generate_learning_objectives(self, topic: str) -> dict:
+        start_time = time.time()
+        prompt = f"Suggest 3 distinct learning paths/objectives for the topic: '{topic}'."
+        
+        system_message = """You are an expert curriculum designer.
+        Create 3 distinct learning paths for the given topic.
+        1. Beginner/Foundational: Focus on basics and core concepts.
+        2. Practical/Project-based: Focus on building things and hands-on practice.
+        3. Advanced/Theoretical: Focus on deep dive, internal mechanics, and advanced usage.
+        
+        Output JSON format:
+        {
+            "objectives": [
+                {
+                    "id": 1,
+                    "title": "string (e.g., 'Python Basics')",
+                    "description": "string (short description)",
+                    "target_audience": "string"
+                },
+                ...
+            ]
+        }
+        """
+        
+        try:
+            response = self.model.generate_content(
+                f"{system_message}\n\n{prompt}",
+                generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=2048)
+            )
+            result = self._clean_json(response.text)
+            
+            # Log to DB
+            latency = int((time.time() - start_time) * 1000)
+            self._log_to_db("objectives", topic, prompt, json.dumps(result, ensure_ascii=False), latency)
+            
+            return result
+        except Exception as e:
+            logger.error(f"Failed to generate objectives: {e}")
+            raise
+
+    async def generate_course(self, topic: str, description: str, difficulty: str, max_chapters: int, selected_objective: str = "") -> dict:
         start_time = time.time()
         course_description = description or topic
         search_query = f"{topic} {course_description} 커리큘럼"
@@ -202,8 +242,14 @@ class ContentGenerator:
             f"Prompt: {topic}에 대한 자습 과제를 생성해주세요.",
             f"MaxChapters: {max_chapters}",
             f"Links:",
+            f"Prompt: {topic}에 대한 자습 과제를 생성해주세요.",
+            f"MaxChapters: {max_chapters}",
+            f"Links:",
             f"Difficulty: {difficulty}",
         ]
+        if selected_objective:
+             prompt_parts.append(f"Selected Learning Objective: {selected_objective}\n(Please tailor the curriculum to match this specific objective.)")
+
         if rag_context:
             prompt_parts.append(f"\n[참고 교재 자료]\n{rag_context}")
         

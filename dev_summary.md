@@ -52,6 +52,10 @@
    - 생성 프롬프트에 `[User Learning Context]` 섹션 추가
    - AI가 이전 성적(예: 낮은 점수)과 피드백(예: "너무 어려움")을 반영하여 난이도와 설명 방식을 조절
 
+3. **학습 목표 제안 (Learning Objectives)**
+   - `POST /generate-objectives`: 주제 입력 시 3가지 학습 방향(기초, 실무, 심화) 제안
+   - `POST /generate-course`: `selected_objective` 파라미터를 통해 선택된 목표에 맞는 커리큘럼 생성
+
 ---
 
 ## [v1.7.0] - 2025-11-25 콘텐츠 이력 관리 (History)

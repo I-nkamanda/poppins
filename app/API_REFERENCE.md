@@ -31,7 +31,8 @@ http://localhost:8000
   "topic": "string (필수)",
   "difficulty": "string (선택, 기본값: '중급')",
   "max_chapters": "integer (선택, 기본값: 3)",
-  "course_description": "string (선택)"
+  "course_description": "string (선택)",
+  "selected_objective": "string (선택, 학습 목표 설명)"
 }
 ```
 
@@ -43,6 +44,7 @@ http://localhost:8000
 | `difficulty` | string | ❌ | 난이도 | "초급", "중급", "고급" |
 | `max_chapters` | integer | ❌ | 최대 챕터 수 | 3 |
 | `course_description` | string | ❌ | 강의 설명 | "파이썬 기초 자료구조 학습" |
+| `selected_objective` | string | ❌ | 선택된 학습 목표 | "실무 중심의 프로젝트 기반 학습" |
 
 #### 응답
 
@@ -210,24 +212,6 @@ API 정보를 반환합니다.
   "timestamp": "2023-11-25T10:00:00.000000",
   "request_type": "course",
   "topic": "파이썬 기초",
-  "model_name": "gemini-2.5-flash",
-  "latency_ms": 1500,
-  "prompt_context": "...",
-  "generated_content": "..."
-}
-```
-
-### POST /feedback
-
-사용자 피드백을 저장합니다.
-
-#### 요청
-
-**Content-Type:** `application/json`
-
-**Request Body:**
-
-```json
 {
   "chapter_title": "string (필수)",
   "rating": "integer (필수, 1-5)",
@@ -241,6 +225,49 @@ API 정보를 반환합니다.
 {
   "status": "success",
   "message": "Feedback saved"
+}
+```
+
+### POST /generate-objectives
+
+주제에 대한 3가지 다른 학습 목표/방향을 제안합니다.
+
+#### 요청
+
+**Content-Type:** `application/json`
+
+**Request Body:**
+
+```json
+{
+  "topic": "string (필수)"
+}
+```
+
+#### 응답
+
+```json
+{
+  "objectives": [
+    {
+      "id": 1,
+      "title": "기초 다지기",
+      "description": "파이썬의 기본 문법과 핵심 개념을 탄탄하게 학습합니다.",
+      "target_audience": "프로그래밍 입문자"
+    },
+    {
+      "id": 2,
+      "title": "실전 프로젝트",
+      "description": "웹 크롤러 만들기 등 실습 위주로 학습합니다.",
+      "target_audience": "실무 경험을 원하는 학습자"
+    },
+    {
+      "id": 3,
+      "title": "심화 이론",
+      "description": "메모리 관리, 비동기 프로그래밍 등 고급 주제를 다룹니다.",
+      "target_audience": "숙련된 개발자"
+    }
+  ]
 }
 ```
 

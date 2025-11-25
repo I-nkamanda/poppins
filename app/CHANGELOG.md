@@ -8,6 +8,9 @@
   - `POST /feedback`: 챕터별 사용자 평점(1-5) 및 코멘트 저장.
   - `QuizResult`: 퀴즈 점수 및 취약점 분석 결과 저장.
 - **컨텍스트 주입**: `ContentGenerator`가 이전 학습 이력을 조회하여 프롬프트에 반영 (`[User Learning Context]`).
+- **학습 목표 제안 (Learning Objectives)**:
+  - `POST /generate-objectives`: 주제에 대해 3가지 다른 학습 방향(기초, 실무, 심화)을 제안.
+  - `POST /generate-course`: 선택된 학습 목표를 반영하여 맞춤형 커리큘럼 생성.
 
 ## [1.7.0] - 2025-11-25
 
