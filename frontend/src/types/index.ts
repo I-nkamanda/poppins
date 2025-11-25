@@ -45,6 +45,9 @@ export interface GenerateRequest {
     topic: string;
     difficulty: string;
     max_chapters: number;
+    course_description?: string;
+    selected_objective?: string;
+    language?: string;
 }
 
 export interface ChapterRequest {
@@ -56,4 +59,35 @@ export interface ChapterRequest {
 
 export interface CourseResponse {
     course: Course;
+}
+
+export interface ObjectiveItem {
+    id: number;
+    title: string;
+    description: string;
+    target_audience: string;
+}
+
+export interface ObjectivesResponse {
+    objectives: ObjectiveItem[];
+}
+
+export interface FeedbackRequest {
+    chapter_title: string;
+    rating: number;
+    comment: string;
+}
+
+export interface QuizGradingRequest {
+    question: string;
+    answer: string;
+    chapter_title: string;
+    chapter_description: string;
+}
+
+export interface QuizGradingResponse {
+    score: number;
+    feedback: string;
+    correct_points: string[];
+    improvements: string[];
 }

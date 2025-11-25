@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ResultPage from './pages/ResultPage';
 import ChapterPage from './pages/ChapterPage';
+import ObjectivesPage from './pages/ObjectivesPage';
 
 function App() {
   return (
@@ -9,6 +10,7 @@ function App() {
       <div className="min-h-screen w-full">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/objectives" element={<ObjectivesPage />} />
           <Route path="/result" element={<ResultPage />} />
           <Route path="/chapter/:chapterId" element={<ChapterPage />} />
         </Routes>

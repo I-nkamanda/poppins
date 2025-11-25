@@ -7,27 +7,15 @@ export default function HomePage() {
     const [topic, setTopic] = useState('');
     const [difficulty, setDifficulty] = useState('중급');
     const [maxChapters, setMaxChapters] = useState(3);
+    const [language, setLanguage] = useState('ko');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!topic.trim()) return;
 
-        setIsLoading(true);
-        try {
-            const data = await generateCourse({
-                topic,
-                difficulty,
-                max_chapters: maxChapters,
-            });
-            // Pass input data to ResultPage for later use in ChapterPage
-            navigate('/result', { state: { data, requestInfo: { topic, difficulty, maxChapters } } });
-        } catch (error) {
-            console.error('Failed to generate course:', error);
-            alert('커리큘럼 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
-        } finally {
-            setIsLoading(false);
-        }
+        // Navigate to ObjectivesPage to select a learning path
+        navigate('/objectives', { state: { topic, difficulty, maxChapters, language } });
     };
 
     return (
@@ -101,6 +89,34 @@ export default function HomePage() {
                                         value={maxChapters}
                                         onChange={(e) => setMaxChapters(parseInt(e.target.value))}
                                     />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    언어 / Language
+                                </label>
+                                <div className="flex space-x-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLanguage('ko')}
+                                        className={`flex-1 py-2 px-4 rounded-md border ${language === 'ko'
+                                            ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500'
+                                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                                    >
+                                        한국어
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLanguage('en')}
+                                        className={`flex-1 py-2 px-4 rounded-md border ${language === 'en'
+                                            ? 'bg-indigo-50 border-indigo-500 text-indigo-700 ring-1 ring-indigo-500'
+                                            : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            } text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+                                    >
+                                        English
+                                    </button>
                                 </div>
                             </div>
                         </div>

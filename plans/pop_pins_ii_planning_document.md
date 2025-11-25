@@ -4,8 +4,8 @@
 **프로젝트명**: PopPins II (어딧세이 가제)  
 **태그라인**: "어떤 주제든, AI가 실습형 PBL 학습지로 만들어줍니다"  
 **작성일**: 2025-11-22  
-**버전**: 1.4.2  
-**최종 업데이트**: 2025-11-22
+**버전**: 1.5.0  
+**최종 업데이트**: 2025-11-25
 
 ---
 
@@ -18,6 +18,7 @@ PopPins II는 AI 기반의 PBL (Problem-Based Learning) 학습 자료 자동 생
 - **맞춤형 학습 경로**: 개인의 난이도와 목표에 맞춘 커리큘럼
 - **PBL + AI 조합**: 실습 중심 학습과 AI의 혁신적 결합
 - **전문 컨텐츠 기반**: PDF 교재를 벡터 DB로 저장하여 AI 환각 최소화
+- **적응형 학습**: 학습 목표 선택 및 피드백 루프를 통한 지속적 개선
 
 ---
 
@@ -53,7 +54,7 @@ AI와 함께 설계하는 나만의 배움 여정을 제공하는 플랫폼
 **기술 스택 결정**:
 - Frontend: React.js + Vite
 - Backend: FastAPI
-- Database: PostgreSQL (향후)
+- Database: SQLite (History/Feedback)
 - AI: Google Gemini 2.5 Flash + RAG
 - Vector DB: FAISS + text-embedding-004
 - Deployment: GCP Cloud Run + Vertex AI Studio (계획)
@@ -74,10 +75,10 @@ AI와 함께 설계하는 나만의 배움 여정을 제공하는 플랫폼
 | AI 생성기 (4종) | ✅ 완료 | Course/Concept/Exercise/Quiz Maker |
 | API 문서 | ✅ 완료 | README, API_REFERENCE, RAG_INTEGRATION_GUIDE |
 | 통합 기획 문서 | ✅ 완료 | 5개 핵심 문서 작성 완료 |
-| Frontend (React) | 🔄 진행중 | 프로젝트 초기 설정 예정 |
+| Frontend (React) | ✅ 완료 | React + Vite, 주요 페이지 구현 완료 |
 | 사용자 인증 | ⏳ 계획 | MVP 이후 구현 |
-| 학습 히스토리 DB | ⏳ 계획 | MVP 이후 구현 |
-| Feedback Loop | ⏳ 계획 | 학습 분석 시스템 설계 단계 |
+| 학습 히스토리 DB | ✅ 완료 | SQLite 연동, History API 구현 |
+| Feedback Loop | ✅ 완료 | 챕터별 피드백 수집 및 저장 |
 | LMS 통합 | ⏳ 계획 | Moodle 등 활용 검토 |
 | GCP 배포 | ⏳ 계획 | Cloud Run + Vertex AI |
 
@@ -133,7 +134,7 @@ AI와 함께 설계하는 나만의 배움 여정을 제공하는 플랫폼
 ### 시나리오 1: 학습 내용 입력 & 구체화
 1. 학습자가 원하는 주제 입력 (예: "파이썬 LinkedList")
 2. AI가 채팅을 통해 학습 내용 구체화
-   - 학습 목표 명확화
+   - 학습 목표 명확화 (기초/실무/심화 선택)
    - 사전 지식 확인
    - 학습 범위 조정
 
@@ -161,18 +162,16 @@ AI와 함께 설계하는 나만의 배움 여정을 제공하는 플랫폼
 
 ---
 
-## 🏗️ 시스템 아키텍처
+## 4. 시스템 아키텍처 (System Architecture)
 
-### 전체 구조 (3-Layer Architecture)
+### High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Frontend Layer                       │
-│              (React/Vite - 예정)                        │
-│  - 주제 입력 UI                                          │
-│  - AI 채팅 인터페이스                                    │
-│  - 결과 시각화 (카드 UI)                                │
-│  - 학습 대시보드                                         │
+│              Frontend Layer (React + TS)                │
+│  - User Interface (Tailwind CSS)                        │
+│  - State Management (React Hooks)                       │
+│  - API Client (Axios)                                   │
 └────────────────────┬────────────────────────────────────┘
                      │ HTTP REST API
 ┌────────────────────▼────────────────────────────────────┐
@@ -194,7 +193,7 @@ AI와 함께 설계하는 나만의 배움 여정을 제공하는 플랫폼
 │  └────────┬────────┘  └──────────┬───────────────┘    │
 │           │ context               │                     │
 │           └───────────────────────┘                     │
-└────────────────────┬────────────────────────────────────┘
+184: └────────────────────┬────────────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────────────┐
 │              AI Engine (Google Gemini)                  │
@@ -279,14 +278,14 @@ PDF 파일 → PyPDFLoader → RecursiveCharacterTextSplitter
   - 문서 기반 정확성 확보
   - AI는 문서 제공 + PBL 변환 역할
 
-### 4. 결과 시각화 (예정)
+### 4. 결과 시각화 (완료)
 - **설명**: 생성된 학습 자료를 직관적인 UI로 표시
 - **기능**:
   - 챕터별 카드 형태 표시
   - 진행 상황 시각화
   - 단계별 네비게이션
 
-### 5. 재생성 기능 (Cache 활용 - 예정)
+### 5. 재생성 기능 (Cache 활용 - 완료)
 - **설명**: 동일 주제 재요청 시 캐시 활용 또는 재생성
 - **기능**:
   - "Generate Again" 버튼
@@ -304,13 +303,13 @@ PDF 파일 → PyPDFLoader → RecursiveCharacterTextSplitter
 
 ## 🛠️ 기술 스택
 
-### Frontend (예정)
+### Frontend (구현 완료)
 - **프레임워크**: React.js + Vite
 - **주요 기능**:
   - 학습 주제 입력 UI
-  - AI 채팅 인터페이스
+  - 학습 목표 선택 UI
   - 결과 시각화 (카드 UI)
-  - 대시보드
+  - 피드백 제출 UI
 
 ### Backend (구현 완료)
 - **프레임워크**: FastAPI
@@ -318,6 +317,7 @@ PDF 파일 → PyPDFLoader → RecursiveCharacterTextSplitter
   - RESTful API
   - 학습 주제, 생성 자료 관리
   - RAG 엔진 통합
+  - Retry Logic (안정성 강화)
 
 ### AI Engine (구현 완료)
 - **LLM**: Google Gemini 2.5 Flash
@@ -344,6 +344,7 @@ langchain
 langchain-community
 langchain-google-genai
 faiss-cpu
+sqlalchemy
 ```
 
 ---
@@ -357,7 +358,7 @@ faiss-cpu
 
 ### 2. 안정성
 - **요구사항**: 고의적 입력 오류에도 크래시 없이 응답
-- **구현**: HTTPException 처리, JSON 파싱 재시도
+- **구현**: HTTPException 처리, JSON 파싱 재시도, **Retry Logic**
 - **우선순위**: 높음
 
 ### 3. 정확성
@@ -427,12 +428,11 @@ faiss-cpu
 - 4가지 AI 생성기 구현
 - API 문서 작성
 
-### 3단계: 테스트 및 발표 준비 (11/24 ~ 11/28) 🔄 진행 중
-- ✅ 백엔드 API 안정화
-- 🔄 Frontend 개발 (예정)
-- 🔄 페이지 꾸미기
-- 🔄 시연용 WOW 포인트 적용
-- 🔄 발표 리허설 및 발표
+### 3단계: 통합 및 고도화 (11/24 ~ 11/25) ✅ 완료
+- ✅ 백엔드 API 안정화 (Retry Logic)
+- ✅ Frontend 개발 (React + Vite)
+- ✅ 적응형 학습 기능 (Objectives, Feedback)
+- ✅ DB 연동 (History)
 
 ---
 
@@ -445,14 +445,14 @@ faiss-cpu
 - ✅ RAG 정확도: 문서 근거 포함 응답률 90% 이상
 
 ### 사용자 경험 성공 지표
-- 사용자 시나리오 3가지 모두 만족
-- 직관적인 UI/UX (Frontend 개발 예정)
-- 학습 진도 추적 가능
+- ✅ 사용자 시나리오 3가지 모두 만족
+- ✅ 직관적인 UI/UX (Frontend 개발 완료)
+- ✅ 학습 진도 추적 가능 (History API)
 
 ### 프로젝트 성공 지표
 - ✅ 작동하는 백엔드 프로토타입 완성
-- 🔄 Frontend 통합 및 시연 성공
-- 🔄 심사 기준별 전략 달성
+- ✅ Frontend 통합 및 시연 준비 완료
+- ✅ 심사 기준별 전략 달성
 
 ---
 
@@ -490,9 +490,8 @@ faiss-cpu
 ## 🚀 향후 확장 계획
 
 ### 단기 확장
-- Frontend 웹 앱 개발 (React + Vite)
 - 사용자 인증 및 세션 관리
-- 학습 히스토리 저장 (데이터베이스)
+- 학습 히스토리 저장 (데이터베이스) - ✅ 1차 완료
 - 다양한 학습 주제 지원 확대
 - 학습 자료 품질 개선
 
@@ -503,7 +502,7 @@ faiss-cpu
 - 학습자 커뮤니티 구축
 - 교사용 관리 도구 확장
 - 실시간 채팅 인터페이스
-- 학습 분석 및 피드백 루프
+- 학습 분석 및 피드백 루프 - ✅ 1차 완료
 
 ---
 
@@ -529,7 +528,7 @@ faiss-cpu
 
 ---
 
-**문서 버전**: 1.4.2  
-**최종 수정일**: 2025-11-22  
+**문서 버전**: 1.5.0  
+**최종 수정일**: 2025-11-25  
 **작성자**: 이진걸  
-**상태**: Backend 완료, Frontend 개발 예정
+**상태**: MVP 개발 완료 (Backend + Frontend)

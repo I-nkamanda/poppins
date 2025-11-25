@@ -1,7 +1,7 @@
 import { useLocation, useNavigate, useParams, Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import type { Course, ChapterContent } from '../types';
-import { generateChapterContent, downloadChapter, gradeQuiz, type QuizGradingResponse } from '../services/api';
+import type { Course, ChapterContent, QuizGradingResponse } from '../types';
+import { generateChapterContent, downloadChapter, gradeQuiz, submitFeedback } from '../services/api';
 import MarkdownViewer from '../components/MarkdownViewer';
 
 type TabType = 'concept' | 'exercise' | 'quiz';
@@ -18,6 +18,12 @@ export default function ChapterPage() {
     const [quizAnswers, setQuizAnswers] = useState<{ [key: number]: string }>({});
     const [quizGradings, setQuizGradings] = useState<{ [key: number]: QuizGradingResponse | null }>({});
     const [gradingLoading, setGradingLoading] = useState<{ [key: number]: boolean }>({});
+
+    // Feedback State
+    const [rating, setRating] = useState<number>(0);
+    const [comment, setComment] = useState('');
+    const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+    const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
     const course = location.state?.course as Course | undefined;
     const requestInfo = location.state?.requestInfo;
@@ -76,6 +82,10 @@ export default function ChapterPage() {
             const nextChapterId = course.chapters[chapterIndex + 1].chapterId;
             navigate(`/chapter/${nextChapterId}`, { state: { course, requestInfo } });
             setActiveTab('concept');
+            // Reset feedback state for new chapter
+            setRating(0);
+            setComment('');
+            setFeedbackSubmitted(false);
         }
     };
 
@@ -84,6 +94,10 @@ export default function ChapterPage() {
             const prevChapterId = course.chapters[chapterIndex - 1].chapterId;
             navigate(`/chapter/${prevChapterId}`, { state: { course, requestInfo } });
             setActiveTab('concept');
+            // Reset feedback state for new chapter
+            setRating(0);
+            setComment('');
+            setFeedbackSubmitted(false);
         }
     };
 
@@ -109,7 +123,7 @@ export default function ChapterPage() {
             a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
-            
+
             // cleanup
             setTimeout(() => {
                 document.body.removeChild(a);
@@ -146,6 +160,30 @@ export default function ChapterPage() {
             alert('채점 중 오류가 발생했습니다.');
         } finally {
             setGradingLoading({ ...gradingLoading, [quizIndex]: false });
+        }
+    };
+
+    const handleFeedbackSubmit = async () => {
+        if (rating === 0) {
+            alert('별점을 선택해주세요.');
+            return;
+        }
+        if (!content) return;
+
+        setIsSubmittingFeedback(true);
+        try {
+            await submitFeedback({
+                chapter_title: content.chapter.chapterTitle,
+                rating,
+                comment
+            });
+            setFeedbackSubmitted(true);
+            alert('피드백이 제출되었습니다. 감사합니다!');
+        } catch (err) {
+            console.error('피드백 제출 실패:', err);
+            alert('피드백 제출 중 오류가 발생했습니다.');
+        } finally {
+            setIsSubmittingFeedback(false);
         }
     };
 
@@ -270,8 +308,8 @@ export default function ChapterPage() {
                                                             onClick={() => handleGradeQuiz(idx, q.quiz)}
                                                             disabled={isGrading || !quizAnswers[idx]?.trim()}
                                                             className={`px-4 py-2 rounded-md text-sm font-medium ${isGrading || !quizAnswers[idx]?.trim()
-                                                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                                : 'bg-indigo-600 text-white hover:bg-indigo-700'
                                                                 }`}
                                                         >
                                                             {isGrading ? '채점 중...' : '✓ 채점하기'}
@@ -325,6 +363,57 @@ export default function ChapterPage() {
                         </>
                     ) : null}
                 </div>
+
+                {/* Feedback Section */}
+                {content && (
+                    <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">이 챕터는 어떠셨나요?</h3>
+                        {!feedbackSubmitted ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            onClick={() => setRating(star)}
+                                            className={`text-2xl focus:outline-none transition-transform hover:scale-110 ${rating >= star ? 'text-yellow-400' : 'text-gray-300'
+                                                }`}
+                                        >
+                                            ★
+                                        </button>
+                                    ))}
+                                    <span className="text-sm text-gray-500 ml-2">
+                                        {rating > 0 ? `${rating}점` : '별점을 선택해주세요'}
+                                    </span>
+                                </div>
+                                <textarea
+                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 placeholder:text-gray-400"
+                                    placeholder="좋았던 점이나 아쉬웠던 점을 자유롭게 남겨주세요 (선택사항)"
+                                    rows={3}
+                                    value={comment}
+                                    onChange={(e) => setComment(e.target.value)}
+                                />
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={handleFeedbackSubmit}
+                                        disabled={isSubmittingFeedback || rating === 0}
+                                        className={`px-4 py-2 rounded-md text-sm font-medium text-white ${isSubmittingFeedback || rating === 0
+                                            ? 'bg-gray-300 cursor-not-allowed'
+                                            : 'bg-indigo-600 hover:bg-indigo-700'
+                                            }`}
+                                    >
+                                        {isSubmittingFeedback ? '제출 중...' : '피드백 보내기'}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center py-4 text-green-600 bg-green-50 rounded-lg">
+                                <p className="font-medium">✓ 소중한 의견 감사합니다!</p>
+                                <p className="text-sm mt-1">다음 학습 콘텐츠 생성에 반영하겠습니다.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
 
                 {/* Navigation Buttons */}
                 <div className="flex justify-between mt-8">

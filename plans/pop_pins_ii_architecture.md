@@ -2,10 +2,10 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Architecture Diagram & System Design  
-**버전**: 1.4.2  
+**버전**: 1.5.0  
 **작성일**: 2025-11-22  
-**최종 업데이트**: 2025-11-22  
-**작성자**: 이진걸
+**작성자**: 이진걸  
+**최종 업데이트**: 2025-11-25
 
 ---
 
@@ -35,6 +35,7 @@ graph TB
         E[Google Gemini 2.5 Flash]
         F[FAISS Vector DB]
         G[PDF 교재]
+        H[SQLite DB]
     end
     
     A -->|HTTP Request| B
@@ -42,6 +43,7 @@ graph TB
     D --> C
     C -->|Generate Content| E
     C -->|Search Context| F
+    C -->|Log/Feedback| H
     F -.->|Index| G
     E -->|JSON Response| C
     C -->|Study Material| D
@@ -52,6 +54,7 @@ graph TB
     style C fill:#fff4e6
     style E fill:#f3e5f5
     style F fill:#e8f5e9
+    style H fill:#fff3e0
 ```
 
 ---
@@ -73,8 +76,9 @@ graph TB
 src/
 ├── pages/
 │   ├── HomePage.tsx           # 주제 입력 폼
+│   ├── ObjectivesPage.tsx     # 학습 목표 선택 (New)
 │   ├── ResultPage.tsx         # 커리큘럼 표시
-│   └── ChapterPage.tsx        # 챕터 상세 (개념, 실습, 퀴즈)
+│   └── ChapterPage.tsx        # 챕터 상세 (개념, 실습, 퀴즈, 피드백)
 ├── components/
 │   └── MarkdownViewer.tsx     # 마크다운 렌더링 (코드 블록 커스텀)
 ├── services/
@@ -84,9 +88,11 @@ src/
 
 **주요 기능**:
 - ✅ Lazy-Loading 커리큘럼 (빠른 초기 로드)
+- ✅ 학습 목표 선택 (기초/실무/심화)
 - ✅ 챕터별 상세 콘텐츠 로드
 - ✅ 퀴즈 AI 채점 기능
 - ✅ 챕터 다운로드 (Markdown)
+- ✅ 피드백 제출 및 반영
 - ✅ 반응형 UI/UX
 
 **상태**: ✅ 완료
@@ -100,11 +106,16 @@ src/
 - Python 3.8+
 - Uvicorn (ASGI 서버)
 - Pydantic (데이터 검증)
+- SQLAlchemy (DB ORM)
 
 **디렉토리 구조**:
 ```
 app/
 ├── main_with_RAG.py          # 메인 애플리케이션
+├── database.py               # DB 연결 설정
+├── models.py                 # DB 모델 (History, Feedback)
+├── services/
+│   └── generator.py          # AI 생성 로직 (Retry Logic 포함)
 ├── .env                       # 환경 변수
 ├── requirements.txt           # 의존성
 └── vector_db/                 # FAISS 벡터 DB
@@ -115,17 +126,21 @@ app/
 
 | Method | Endpoint | 설명 | 상태 |
 |--------|----------|------|------|
+| POST | `/generate-objectives` | 학습 목표 3가지 제안 | ✅ |
 | POST | `/generate-course` | 커리큘럼만 생성 (Lazy-Loading) | ✅ |
 | POST | `/generate-chapter-content` | 챕터 상세 내용 생성 | ✅ |
 | POST | `/generate-study-material` | 학습 자료 일괄 생성 (하위 호환) | ✅ |
 | POST | `/download-chapter` | 챕터 Markdown 다운로드 | ✅ |
 | POST | `/grade-quiz` | 퀴즈 AI 채점 | ✅ |
+| POST | `/feedback` | 사용자 피드백 저장 | ✅ |
+| GET | `/history` | 생성 이력 조회 | ✅ |
 | GET | `/` | API 정보 | ✅ |
 | GET | `/health` | 서버 상태 확인 | ✅ |
 
 **핵심 함수**:
 - `initialize_rag_vector_db()`: FAISS 벡터 DB 초기화
 - `search_rag_context()`: RAG 컨텍스트 검색
+- `generate_learning_objectives()`: 학습 목표 생성 (Retry Logic)
 - `generate_course()`: 커리큘럼 생성
 - `generate_concept()`: 개념 정리 생성
 - `generate_exercise()`: 실습 과제 생성
@@ -149,6 +164,7 @@ model = genai.GenerativeModel(
 ```
 
 **역할별 프롬프트**:
+- **ObjectivesMaker**: 학습 경로 설계자 (3가지 경로)
 - **CourseMaker**: 커리큘럼 설계 전문가
 - **ConceptMaker**: 개념 정리 전문가 (1000~1200자, Markdown)
 - **ExerciseMaker**: 실습 문제 출제자 (3개 문제)
@@ -211,17 +227,25 @@ sequenceDiagram
     participant FastAPI
     participant RAG
     participant Gemini
+    participant DB
     
     User->>Frontend: 학습 주제 입력
-    Frontend->>FastAPI: POST /generate-study-material
+    Frontend->>FastAPI: POST /generate-objectives
+    FastAPI->>Gemini: 학습 목표 3가지 생성 요청
+    Gemini-->>FastAPI: Objectives JSON
+    FastAPI-->>Frontend: ObjectivesResponse
+    
+    User->>Frontend: 목표 선택
+    Frontend->>FastAPI: POST /generate-course
     
     Note over FastAPI: 1. CourseMaker
     FastAPI->>RAG: 커리큘럼 참고 검색
     RAG-->>FastAPI: 관련 문서 (Top-K=3)
     FastAPI->>Gemini: 커리큘럼 생성 요청
     Gemini-->>FastAPI: Course JSON
+    FastAPI->>DB: 생성 이력 저장
     
-    loop 각 챕터마다
+    loop 각 챕터마다 (Lazy Loading)
         Note over FastAPI: 2. ConceptMaker
         FastAPI->>RAG: 개념 설명 검색
         RAG-->>FastAPI: 관련 문서
@@ -241,33 +265,43 @@ sequenceDiagram
         Gemini-->>FastAPI: Quiz JSON
     end
     
-    FastAPI-->>Frontend: StudyMaterialResponse
+    FastAPI-->>Frontend: ChapterContent
     Frontend-->>User: 학습 자료 표시
+    
+    User->>Frontend: 피드백 제출
+    Frontend->>FastAPI: POST /feedback
+    FastAPI->>DB: 피드백 저장
 ```
 
 ---
 
-## 🗄️ Database Architecture (⏳ 계획)
+## 🗄️ Database Architecture (✅ 1차 완료)
 
-### ERD 기반 설계
+### SQLite Schema
 
-향후 PostgreSQL 도입 시 사용할 테이블:
+**GenerationLog**:
+- `id`: PK
+- `request_type`: "objectives", "course", "concept", etc.
+- `topic`: 주제
+- `prompt_context`: 프롬프트 내용
+- `generated_content`: 생성된 JSON
+- `timestamp`: 생성 시간
 
-```
-Member (사용자)
-    ↓ 1:N
-Course (강좌)
-    ↓ 1:N
-Chapter (챕터)
-    ↓ 1:N
-├── Concept (개념)
-├── Exercise (실습)
-└── Quiz (퀴즈)
-    ↓ 1:N
-Result (학습 결과)
-```
+**QuizResult**:
+- `id`: PK
+- `chapter_title`: 챕터명
+- `score`: 점수
+- `weak_points`: 취약점 분석
+- `timestamp`: 채점 시간
 
-**상태**: ⏳ MVP 이후 구현 예정
+**UserFeedback**:
+- `id`: PK
+- `chapter_title`: 챕터명
+- `rating`: 별점 (1-5)
+- `comment`: 코멘트
+- `timestamp`: 제출 시간
+
+**상태**: ✅ MVP 구현 완료
 
 ---
 
@@ -343,9 +377,9 @@ graph LR
 
 ---
 
-## 🔍 Monitoring & Logging (⏳)
+## 🔍 Monitoring & Logging (✅)
 
-### 계획된 모니터링 구성
+### 구현된 모니터링 구성
 
 - **Application Monitoring**: Cloud Monitoring
 - **Error Tracking**: Sentry
@@ -378,7 +412,7 @@ graph LR
 
 ---
 
-**문서 버전**: 1.4.2  
-**최종 수정일**: 2025-11-22  
-**상태**: 현재 아키텍처 문서화 완료  
-**다음 단계**: Frontend 개발, DB 통합
+**문서 버전**: 1.5.0  
+**최종 수정일**: 2025-11-25  
+**상태**: 현재 아키텍처 문서화 완료 (Backend + Frontend + DB)  
+**다음 단계**: 배포 파이프라인 구축

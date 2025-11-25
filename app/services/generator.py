@@ -190,58 +190,87 @@ class ContentGenerator:
             logger.error(f"Failed to get learning context: {e}")
             return ""
 
-    async def generate_learning_objectives(self, topic: str) -> dict:
+    async def generate_learning_objectives(self, topic: str, language: str = "ko") -> dict:
         start_time = time.time()
-        prompt = f"Suggest 3 distinct learning paths/objectives for the topic: '{topic}'."
         
-        system_message = """You are an expert curriculum designer.
+        if language == "ko":
+            prompt = f"주제 '{topic}'에 대한 3가지 다른 학습 경로/목표를 제안해주세요."
+            lang_instruction = "IMPORTANT: All output (titles, descriptions, target_audience) MUST be in Korean."
+            example_title = "파이썬 기초"
+            example_desc = "string (short description in Korean)"
+            example_audience = "string (in Korean)"
+        else:
+            prompt = f"Suggest 3 distinct learning paths/objectives for the topic: '{topic}'."
+            lang_instruction = "IMPORTANT: All output (titles, descriptions, target_audience) MUST be in English."
+            example_title = "Python Basics"
+            example_desc = "string (short description)"
+            example_audience = "string"
+
+        system_message = f"""You are an expert curriculum designer.
         Create 3 distinct learning paths for the given topic.
         1. Beginner/Foundational: Focus on basics and core concepts.
         2. Practical/Project-based: Focus on building things and hands-on practice.
         3. Advanced/Theoretical: Focus on deep dive, internal mechanics, and advanced usage.
         
+        {lang_instruction}
+        
         Output JSON format:
-        {
+        {{
             "objectives": [
-                {
+                {{
                     "id": 1,
-                    "title": "string (e.g., 'Python Basics')",
-                    "description": "string (short description)",
-                    "target_audience": "string"
-                },
+                    "title": "string (e.g., '{example_title}')",
+                    "description": "{example_desc}",
+                    "target_audience": "{example_audience}"
+                }},
                 ...
             ]
-        }
+        }}
         """
-        
-        try:
-            response = self.model.generate_content(
-                f"{system_message}\n\n{prompt}",
-                generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=2048)
-            )
-            result = self._clean_json(response.text)
-            
-            # Log to DB
-            latency = int((time.time() - start_time) * 1000)
-            self._log_to_db("objectives", topic, prompt, json.dumps(result, ensure_ascii=False), latency)
-            
-            return result
-        except Exception as e:
-            logger.error(f"Failed to generate objectives: {e}")
-            raise
 
-    async def generate_course(self, topic: str, description: str, difficulty: str, max_chapters: int, selected_objective: str = "") -> dict:
+        
+        max_retries = 3
+        last_exception = None
+
+        for attempt in range(max_retries):
+            try:
+                # Debug logging
+                api_key = os.getenv("GEMINI_API_KEY")
+                if not api_key:
+                    logger.error("GEMINI_API_KEY is missing in generate_learning_objectives")
+                else:
+                    logger.info(f"Using API Key: {api_key[:5]}...{api_key[-5:]}")
+
+                response = await self.model.generate_content_async(
+                    f"{system_message}\n\n{prompt}",
+                    generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=2048)
+                )
+                result = self._clean_json(response.text)
+                
+                # Log to DB
+                latency = int((time.time() - start_time) * 1000)
+                self._log_to_db("objectives", topic, prompt, json.dumps(result, ensure_ascii=False), latency)
+                
+                return result
+            except Exception as e:
+                last_exception = e
+                logger.warning(f"Attempt {attempt + 1} failed: {e}")
+                await asyncio.sleep(1)  # Async sleep
+
+        logger.error(f"All {max_retries} attempts failed. Last error: {last_exception}")
+        raise last_exception
+
+    async def generate_course(self, topic: str, description: str, difficulty: str, max_chapters: int, selected_objective: str = "", language: str = "ko") -> dict:
         start_time = time.time()
         course_description = description or topic
         search_query = f"{topic} {course_description} 커리큘럼"
         rag_context = self.search_context(search_query, k=3)
+        
+        lang_instruction = "IMPORTANT: All output (titles, descriptions) MUST be in Korean." if language == "ko" else "IMPORTANT: All output (titles, descriptions) MUST be in English."
 
         prompt_parts = [
             f"Title: {topic}",
             f"Description: {course_description}",
-            f"Prompt: {topic}에 대한 자습 과제를 생성해주세요.",
-            f"MaxChapters: {max_chapters}",
-            f"Links:",
             f"Prompt: {topic}에 대한 자습 과제를 생성해주세요.",
             f"MaxChapters: {max_chapters}",
             f"Links:",
@@ -255,21 +284,24 @@ class ContentGenerator:
         
         prompt = "\n".join(prompt_parts)
         
-        system_message = """당신은 JSON 응답 전용 AI입니다.
+        system_message = f"""당신은 JSON 응답 전용 AI입니다.
 입력 데이터는:
-{
+{{
 	"courseTitle" : string // 제목
 	"courseDescription" : string // 학습 주제
 	"prompt" : string // 본인 제약 상황(프롬프트)
 	"maxchapters" : number // 최대 코스 개수
 	"link" : string[] // 관련 링크 
 	"difficulty": any // 난이도
-}
+}}
 형식으로 되어 있어.
 
 작업:
 You are an expert course designer and curriculum developer, skilled in creating comprehensive and tailored learning experiences. Your task is to generate a customized course syllabus in a structured JSON format. The syllabus should include a unique course ID and a list of chapters, where each chapter has its own ID, title, and description. You must use all provided course details, learner characteristics, maximum units, learning intensity, and any reference materials to create a comprehensive and tailored syllabus.
 If reference materials are provided, use them to structure the course chapters in a logical learning progression that aligns with the content covered in the reference materials.
+
+{lang_instruction}
+
 # Step by Step instructions
 1. Create a unique Course ID (must be integer) for the syllabus.
 2. Based on the courseTitle, courseDescription, prompts, maxchapters, and difficulty, generate the title and description for the first chapter.
@@ -278,21 +310,21 @@ If reference materials are provided, use them to structure the course chapters i
 4. Check if the number of generated chapters has reached the Max Units. If not, go back to step 2 to generate the next chapter, ensuring progress towards the Max Units.
 
 응답 형식:
-{
-	"course": {
+{{
+	"course": {{
 		"id": number;
 		"chapters": [
-			{
+			{{
 				"chapterId" : number
 				"chapterTitle": string
 				"chapterDescription" : string					
-			},
-			{
+			}},
+			{{
 				...
-			}
+			}}
 		]
-	} 
-}
+	}} 
+}}
 
 규칙:
 You are working as part of an AI system, so no chit-chat and no explaining what you're doing and why.

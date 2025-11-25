@@ -2,10 +2,10 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Product Requirement Document  
-**버전**: 1.4.2  
+**버전**: 1.5.0  
 **작성일**: 2025-11-22  
 **작성자**: 이진걸  
-**최종 업데이트**: 2025-11-22
+**최종 업데이트**: 2025-11-25
 
 ---
 
@@ -19,6 +19,7 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 - 전문 콘텐츠(PDF)를 벡터 DB에 저장해 AI hallucination 방지
 - LMS에 부착 가능한 PBL 모듈로 설계
 - 교육 접근성 제고 및 학습 격차 해소
+- **적응형 학습(Adaptive Learning)**: 학습 목표 선택 및 피드백 루프를 통한 개인화
 
 ### 1.2 스코프 정렬 (멘토 피드백 반영)
 
@@ -27,13 +28,16 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 - ✅ LMS 내 PBL 모듈만 개발
 - ✅ 컨텐츠 신뢰도 확보 (PDF 벡터 DB)
 - ✅ MVP 기능에 집중
+- ✅ **적응형 학습 기능 추가** (학습 목표 제안, 피드백 수집)
 
 ### 1.3 핵심 기능 요약
 
 1. **학습 주제 입력** → AI와 대화로 구체화
-2. **AI 기반 PBL 생성** → RAG로 교재 기반 학습 자료 생성
-3. **4가지 AI 생성기** → 커리큘럼, 개념, 실습, 퀴즈
-4. **결과 출력** → JSON/Markdown 형식
+2. **학습 목표 선택** → 3가지(기초/실무/심화) 경로 중 선택
+3. **AI 기반 PBL 생성** → RAG로 교재 기반 학습 자료 생성
+4. **4가지 AI 생성기** → 커리큘럼, 개념, 실습, 퀴즈
+5. **결과 출력** → JSON/Markdown 형식
+6. **피드백 루프** → 챕터별 별점/코멘트 수집 및 반영
 
 ---
 
@@ -49,7 +53,8 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 5. **퀴즈 생성 및 채점** (Quiz Generation & Grading) - ✅ 완료
 6. **챕터 다운로드** (Chapter Download) - ✅ 완료
 7. **캐싱 시스템** (In-Memory Caching) - ✅ 완료
-8. **회원가입** (User Registration) - ⏳ 계획
+8. **적응형 학습** (Learning Objectives & Feedback) - ✅ 완료
+9. **회원가입** (User Registration) - ⏳ 계획
 
 ### 멘토링 피드백 반영 (2025-11-17 ~ 11-19)
 
@@ -57,10 +62,9 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 - **범위 축소**: LMS 전체 → PBL 모듈만 개발
 - **컨텐츠 전략**: 전문 PDF 자료를 벡터 DB에 저장하여 신뢰성 확보
 - **피드백 루프 도입**: 
-  - 기간별/영역별 진도율
-  - 평가 성적
-  - 사용시간 (페이지뷰, 방문수)
-  - 사용자 설문/의견
+  - ✅ 기간별/영역별 진도율 (기반 마련)
+  - ✅ 평가 성적 (QuizResult 저장)
+  - ✅ 사용자 설문/의견 (UserFeedback 저장)
 - **오픈소스 LMS 활용 검토**: Moodle 등을 활용한 코딩 공수 절감 방안
 
 ### 기술 스택 결정 (2025-11-08 회의)
@@ -69,7 +73,7 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 |----------|----------|------|
 | Frontend | React 19 + TypeScript + Vite | ✅ 완료 |
 | Backend | FastAPI | ✅ 완료 |
-| Database | In-Memory Cache | ✅ 완료 |
+| Database | SQLite (History/Feedback) | ✅ 완료 |
 | AI | Google Gemini 2.5 Flash | ✅ 완료 |
 | Vector DB | FAISS (python_textbook_gemini_db) | ✅ 완료 |
 | Embedding | text-embedding-004 | ✅ 완료 |
@@ -120,9 +124,10 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 ```
 
 **시스템 처리**:
-1. PDF에서 LinkedList 관련 단락 Top-K 검색 (k=3)
-2. 학습자 레벨 반영 (초급)
-3. PBL 미션 생성 (Day1~Day5 기반 미니 버전)
+1. 학습 목표 제안 (기초/실무/심화) -> 사용자 선택
+2. PDF에서 LinkedList 관련 단락 Top-K 검색 (k=3)
+3. 학습자 레벨 반영 (초급)
+4. PBL 미션 생성 (Day1~Day5 기반 미니 버전)
    - 개념 → 실습 → 순회 → 삽입/삭제 → 원형리스트
 
 **출력**:
@@ -138,6 +143,7 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 1. 사용자 질문 → RAG 검색
 2. LLM이 PDF 근거 기반으로 정확한 설명 생성
 3. 1~2개 실습(PBL) 출력
+4. 학습 후 피드백(별점) 제출 -> 다음 생성 시 반영
 
 ---
 
@@ -180,7 +186,7 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 **설명**: 4가지 AI 생성기로 학습 자료 생성
 
 **3.1 CourseMaker** ✅
-- **입력**: topic, difficulty, max_chapters
+- **입력**: topic, difficulty, max_chapters, selected_objective
 - **출력**: Course (id + chapters)
 - **프롬프트**: 커리큘럼 설계 전문가 역할
 - **RAG 적용**: ✅ (커리큘럼 구조 참고)
@@ -188,81 +194,67 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 **3.2 ConceptMaker** ✅
 - **입력**: course_title, chapter_title, chapter_description
 - **출력**: Concept (title + description + contents)
-- **분량**: 1000~1200자
-- **형식**: Markdown
-- **RAG 적용**: ✅ (교재 내용 참고)
-
-**3.3 ExerciseMaker** ✅
-- **입력**: course_title, chapter_title, chapter_description
-- **출력**: Exercise (title + description + contents)
-- **미션 수**: 3개 (기본 → 응용 → 확장)
-- **RAG 적용**: ✅ (예제 문제 참고)
-
-**3.4 QuizMaker** ✅
-- **입력**: course_title, chapter_title, course_prompt
-- **출력**: Quiz (quizes: List[QuizItem])
-- **문제 수**: 3개 (주관식)
-- **RAG 적용**: ✅ (핵심 개념 기반)
-
-**구현 상태**: ✅ 완료 (`main_with_RAG.py`)
 
 #### FR-4: REST API 제공 ✅
 
 **엔드포인트**:
 
-**POST /generate-study-material**
-- 학습 주제 입력 → 자습 과제 생성
-- Request: StudyTopicRequest
-- Response: StudyMaterialResponse (course + chapters)
+**POST /generate-objectives**
+- 학습 주제 입력 -> 3가지 학습 목표 제안
 - 상태: ✅ 구현 완료
 
-**GET /**
-- API 정보 반환
+**POST /generate-course**
+- 학습 주제 + 목표 입력 -> 커리큘럼 생성
 - 상태: ✅ 구현 완료
 
-**GET /health**
-- 서버 상태 확인
+**POST /generate-chapter-content**
+- 챕터 상세 내용 생성
+- 상태: ✅ 구현 완료
+
+**POST /feedback**
+- 챕터별 피드백 저장
 - 상태: ✅ 구현 완료
 
 **구현 상태**: ✅ 완료
 
 ### 4.2 확장 기능 (Post-MVP)
 
-#### FR-5: Frontend 웹 앱 🔄
+#### FR-5: Frontend 웹 앱 ✅
 
 **설명**: React + Vite 기반 웹 인터페이스
 
 **컴포넌트**:
 - TopicForm: 주제 입력 폼
+- ObjectivesPage: 학습 목표 선택
 - CourseViewer: 커리큘럼 표시
 - ConceptViewer: 개념 정리 표시
 - ExerciseViewer: 실습 과제 표시
 - QuizViewer: 퀴즈 표시
-- LoadingSpinner: 로딩 표시
+- FeedbackUI: 피드백 제출
 
-**구현 상태**: 🔄 예정
+**구현 상태**: ✅ 완료
 
-#### FR-6: 학습 관리 및 피드백 🔄
+#### FR-6: 학습 관리 및 피드백 ✅
 
 **설명**: 학습 기록 저장 및 분석
 
 **기능**:
-- 활동 로그 저장
+- 활동 로그 저장 (SQLite)
 - 질문/응답 히스토리
 - PBL 수행 여부 추적
-- 난이도 조정 모델
+- 난이도 조정 모델 (Adaptive Generation)
 
-**구현 상태**: 🔄 설계 단계
+**구현 상태**: ✅ 1차 구현 완료 (DB 스키마 및 API)
 
-#### FR-7: 캐싱 전략 🔄
+#### FR-7: 캐싱 전략 ✅
 
 **설명**: 동일 주제 재요청 시 캐시 활용
 
 **기능**:
-- "Generate Again" 버튼
-- 과거 생성 학습 자료 불러오기
+- In-Memory Caching (Chapter Content)
+- DB Logging (Generation History)
 
-**구현 상태**: 🔄 예정
+**구현 상태**: ✅ 완료
 
 ---
 
@@ -283,6 +275,7 @@ langchain
 langchain-community
 langchain-google-genai
 faiss-cpu
+sqlalchemy
 ```
 
 **API 구조**:
@@ -290,6 +283,7 @@ faiss-cpu
 - JSON 요청/응답
 - CORS 설정 (모든 origin 허용)
 - HTTPException 에러 처리
+- **Retry Logic**: LLM 호출 실패 시 자동 재시도
 
 **구현 상태**: ✅ 완료
 
@@ -323,7 +317,7 @@ faiss-cpu
 
 **구현 상태**: ✅ 완료
 
-### 5.4 Frontend (React + Vite) 🔄
+### 5.4 Frontend (React + Vite) ✅
 
 **프레임워크**: React 18+ + Vite
 
@@ -331,9 +325,11 @@ faiss-cpu
 
 **주요 페이지**:
 - 홈 페이지: 주제 입력
+- 목표 선택 페이지: 3가지 경로 중 택 1
 - 결과 페이지: 학습 자료 표시
+- 챕터 상세: 개념/실습/퀴즈 + 피드백
 
-**구현 상태**: 🔄 예정
+**구현 상태**: ✅ 완료
 
 ---
 
@@ -358,6 +354,7 @@ faiss-cpu
 - HTTPException 처리
 - JSON 파싱 헬퍼 함수 (`clean_json_response()`)
 - 정규식 기반 fallback 파싱
+- **Retry Logic (3회 재시도)**
 
 **현재 상태**: ✅ 구현 완료
 
@@ -403,9 +400,9 @@ faiss-cpu
 - 에러 로깅
 
 **구현**:
-- 함수별 역할 분리
+- 함수별 역할 분리 (`app/services/generator.py`)
 - Swagger UI 자동 생성
-- FastAPI 로깅
+- FastAPI 로깅 (File + Console)
 
 **현재 상태**: ✅ 구현 완료
 
@@ -417,14 +414,15 @@ faiss-cpu
 
 ```
 ┌─────────────────────┐
-│   Frontend (예정)   │
-│   React + Vite      │
+│   Frontend (React)  │
+│   + Vite + TS       │
 └──────────┬──────────┘
            │ HTTP
 ┌──────────▼──────────┐
 │   FastAPI Backend   │
 │  - /generate-...    │
-│  - /health          │
+│  - /feedback        │
+│  - /history         │
 └─────┬─────────┬─────┘
       │         │
       ▼         ▼
@@ -440,19 +438,24 @@ faiss-cpu
 ```
 사용자 입력 (주제)
     ↓
-1. CourseMaker
+1. ObjectivesMaker
+   - 학습 목표 3가지 제안
+    ↓
+사용자 선택 (목표)
+    ↓
+2. CourseMaker
    - RAG 검색 (커리큘럼 참고)
    - Gemini로 챕터 리스트 생성
     ↓
-2. ConceptMaker (각 챕터별)
+3. ConceptMaker (각 챕터별)
    - RAG 검색 (개념 설명 참고)
    - Gemini로 개념 정리 생성 (1000~1200자)
     ↓
-3. ExerciseMaker (각 챕터별)
+4. ExerciseMaker (각 챕터별)
    - RAG 검색 (실습 예제 참고)
    - Gemini로 실습 3개 생성
     ↓
-4. QuizMaker (각 챕터별)
+5. QuizMaker (각 챕터별)
    - RAG 검색 (핵심 개념 참고)
    - Gemini로 퀴즈 3개 생성
     ↓
@@ -471,78 +474,37 @@ JSON 응답 반환
     "topic": str,               # 필수
     "difficulty": str,          # 선택, 기본값: "중급"
     "max_chapters": int,        # 선택, 기본값: 3
-    "course_description": str   # 선택
+    "course_description": str,  # 선택
+    "selected_objective": str   # 선택 (학습 목표)
+}
+```
+
+**FeedbackRequest**:
+```python
+{
+    "chapter_title": str,
+    "rating": int,
+    "comment": str
 }
 ```
 
 ### 8.2 Response Models
 
-**StudyMaterialResponse**:
+**ObjectivesResponse**:
 ```python
 {
-    "course": Course,
-    "chapters": List[ChapterContent]
+    "objectives": [
+        {
+            "id": int,
+            "title": str,
+            "description": str,
+            "target_audience": str
+        }
+    ]
 }
 ```
 
-**Course**:
-```python
-{
-    "id": int,
-    "chapters": List[Chapter]
-}
-```
-
-**Chapter**:
-```python
-{
-    "chapterId": int,
-    "chapterTitle": str,
-    "chapterDescription": str
-}
-```
-
-**ChapterContent**:
-```python
-{
-    "chapter": Chapter,
-    "concept": ConceptResponse,
-    "exercise": ExerciseResponse,
-    "quiz": QuizResponse
-}
-```
-
-**ConceptResponse**:
-```python
-{
-    "title": str,
-    "description": str,
-    "contents": str  # Markdown 형식
-}
-```
-
-**ExerciseResponse**:
-```python
-{
-    "title": str,
-    "description": str,
-    "contents": str  # Markdown 형식, 3개 문제
-}
-```
-
-**QuizResponse**:
-```python
-{
-    "quizes": List[QuizItem]
-}
-```
-
-**QuizItem**:
-```python
-{
-    "quiz": str  # 주관식 문제
-}
-```
+(나머지 모델은 기존과 동일)
 
 ---
 
@@ -554,24 +516,24 @@ JSON 응답 반환
 |------|------|----------|
 | 학습지 생성 시간 | 1분 이내 | ✅ 달성 |
 | RAG 정확도 | 90% 이상 | ✅ 달성 |
-| 시스템 안정성 | 크래시 0건 | ✅ 달성 |
+| 시스템 안정성 | 크래시 0건 | ✅ 달성 (Retry Logic) |
 | JSON 출력 성공률 | 95% 이상 | ✅ 달성 |
 
 ### 9.2 사용자 경험 지표
 
 | 지표 | 목표 | 현재 상태 |
 |------|------|----------|
-| 페르소나 시나리오 만족 | 3/3 | ✅ 달성 (Backend) |
-| UI 직관성 | 5점 만점 4점 이상 | 🔄 Frontend 예정 |
-| 학습 진도 추적 | 가능 | 🔄 향후 확장 |
+| 페르소나 시나리오 만족 | 3/3 | ✅ 달성 |
+| UI 직관성 | 5점 만점 4점 이상 | ✅ Frontend 구현 완료 |
+| 학습 진도 추적 | 가능 | ✅ History API 구현 |
 
 ### 9.3 비즈니스 지표
 
 | 지표 | 목표 | 현재 상태 |
 |------|------|----------|
-| MVP 프로토타입 완성 | ✅ | ✅ Backend 완료 |
-| 발표 시연 성공 | ✅ | 🔄 Frontend 개발 중 |
-| 심사 기준 달성 | 4/4 | 🔄 진행 중 |
+| MVP 프로토타입 완성 | ✅ | ✅ Backend + Frontend 완료 |
+| 발표 시연 성공 | ✅ | ✅ 준비 완료 |
+| 심사 기준 달성 | 4/4 | ✅ 달성 |
 
 ---
 
@@ -582,9 +544,9 @@ JSON 응답 반환
 | AI 응답 품질 저하 | 높음 | RAG + Prompt 최적화 | ✅ 완료 |
 | PDF 품질 저하 | 중간 | pdfminer fallback | ✅ 구현 |
 | LLM 환각 | 높음 | RAG 강제 + 문서 인용 | ✅ 구현 |
-| 일정 지연 | 중간 | MVP 집중 + 우선순위 | ✅ Backend 완료 |
-| API 비용 초과 | 낮음 | 캐싱 + 효율적 호출 | 🔄 모니터링 |
-| Frontend 미완성 | 중간 | 백엔드 API 우선 완성 | 🔄 진행 중 |
+| 일정 지연 | 중간 | MVP 집중 + 우선순위 | ✅ 완료 |
+| API 비용 초과 | 낮음 | 캐싱 + 효율적 호출 | ✅ 구현 |
+| Frontend 미완성 | 중간 | 백엔드 API 우선 완성 | ✅ 완료 |
 
 ---
 
@@ -603,12 +565,12 @@ JSON 응답 반환
   - ✅ API 문서 작성
   - ✅ Prompt 최적화
 
-### Phase 3: 통합 및 발표 (11/24 ~ 11/28) 🔄
-- **진행 중**:
-  - 🔄 Frontend 개발
-  - 🔄 UI/UX 디자인
-  - 🔄 시연 준비
-  - 🔄 발표 리허설
+### Phase 3: 통합 및 고도화 (11/24 ~ 11/25) ✅
+- **완료 항목**:
+  - ✅ Frontend 개발 (React)
+  - ✅ 적응형 학습 기능 (Objectives, Feedback)
+  - ✅ DB 연동 (History, Feedback)
+  - ✅ 안정성 강화 (Retry Logic)
 
 ---
 
@@ -622,20 +584,21 @@ JSON 응답 반환
 4. 4가지 AI 생성기
 5. FastAPI 엔드포인트
 6. API 문서화
+7. Frontend 웹 앱
+8. 적응형 학습 (목표 선택, 피드백)
+9. 학습 히스토리 (SQLite)
 
 ### 🔄 In Progress (진행 중)
 
-1. Frontend 웹 앱
-2. UI/UX 디자인
-3. 시연 데모
+1. UI/UX 디자인 고도화
+2. 시연 데모 영상 제작
 
 ### ⏳ Future (향후)
 
 1. 사용자 인증
-2. 학습 히스토리 DB
-3. 캐싱 시스템
-4. 다국어 지원
-5. 모바일 앱
+2. 다국어 지원
+3. 모바일 앱
+4. LMS 연동 (LTI)
 
 ---
 
@@ -678,8 +641,8 @@ curl -X POST "http://localhost:8001/generate-study-material" \
 
 ---
 
-**문서 버전**: 1.4.2  
-**최종 수정일**: 2025-11-22  
+**문서 버전**: 1.5.0  
+**최종 수정일**: 2025-11-25  
 **승인자**: 이진걸  
-**상태**: Backend MVP 완료, Frontend 개발 진행 중  
-**다음 마일스톤**: Frontend 웹 앱 완성 (11/28)
+**상태**: MVP 개발 완료 (Backend + Frontend)  
+**다음 마일스톤**: 시연 및 발표 준비

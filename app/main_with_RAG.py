@@ -88,6 +88,7 @@ class StudyTopicRequest(BaseModel):
     max_chapters: Optional[int] = 3
     course_description: Optional[str] = None
     selected_objective: Optional[str] = None  # New field for selected learning objective
+    language: Optional[str] = "ko"  # Language preference (ko/en)
 
 
 class ChapterRequest(BaseModel):
@@ -195,7 +196,7 @@ async def generate_objectives(request: StudyTopicRequest):
         raise HTTPException(status_code=500, detail="ContentGenerator not initialized")
 
     try:
-        result = await generator.generate_learning_objectives(request.topic)
+        result = await generator.generate_learning_objectives(request.topic, request.language)
         return ObjectivesResponse(**result)
     except Exception as e:
         logger.error(f"학습 목표 제안 실패: {e}", exc_info=True)
@@ -217,7 +218,8 @@ async def generate_course_only(request: StudyTopicRequest):
             description=request.course_description or request.topic,
             difficulty=request.difficulty,
             max_chapters=request.max_chapters,
-            selected_objective=request.selected_objective
+            selected_objective=request.selected_objective,
+            language=request.language
         )
         return CourseResponse(**result)
     except Exception as e:

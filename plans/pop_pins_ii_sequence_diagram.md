@@ -2,15 +2,16 @@
 
 **프로젝트**: PopPins II  
 **문서 타입**: System Sequence Diagrams  
-**버전**: 1.4.2  
+**버전**: 1.5.0  
 **작성일**: 2025-11-22  
-**최종 업데이트**: 2025-11-22
+**작성자**: 이진걸  
+**최종 업데이트**: 2025-11-25
 
 ---
 
 ## 1. 전체 시스템 플로우
 
-### 1.1 학습 자료 생성 플로우
+### 1.1 학습 자료 생성 플로우 (Adaptive Learning)
 
 ```mermaid
 sequenceDiagram
@@ -20,17 +21,21 @@ sequenceDiagram
     participant RAG as 📚 RAG Engine
     participant AI as 🤖 Gemini
     
-    User->>UI: 주제 입력
-    UI->>User: 옵션 설정 화면
-    User->>UI: 난이도/챕터 수 설정
-    UI->>API: POST /generate-study-material
+    User->>UI: 주제 입력 (예: "Pandas")
+    UI->>API: POST /generate-objectives
+    API->>AI: 학습 목표 3가지 생성 요청
+    AI-->>API: Objectives JSON
+    API-->>UI: ObjectivesResponse
+    
+    User->>UI: 목표 선택 (예: "실무 중심")
+    UI->>API: POST /generate-course (selected_objective)
     
     API->>RAG: PDF 검색 (Top-3)
     RAG-->>API: 관련 문서
-    API->>AI: 커리큘럼 생성
+    API->>AI: 커리큘럼 생성 (목표 반영)
     AI-->>API: Course + Chapters
     
-    loop 챕터별
+    loop 챕터별 (Lazy Loading)
         API->>RAG: 챕터 문서 검색
         RAG-->>API: 문서
         API->>AI: 개념/실습/퀴즈 생성
@@ -88,7 +93,7 @@ sequenceDiagram
 
 ## 3. 사용자 시나리오별 플로우
 
-### 3.1 빠른 학습 (수진의 사례)
+### 3.1 적응형 학습 (수진의 사례)
 
 ```mermaid
 sequenceDiagram
@@ -96,21 +101,18 @@ sequenceDiagram
     participant System
     
     수진->>System: "확률과 통계 기초" 입력
-    수진->>System: 난이도: 초급, 3일 학습
-    System->>수진: 커리큘럼 3챕터 생성 (30초)
+    System->>수진: 3가지 목표 제안 (기초/실무/심화)
+    수진->>System: "기초 개념 위주" 선택
     
-    Note over 수진,System: Day 1
-    수진->>System: 챕터 1 개념 읽기
-    수진->>System: 실습 1-2 풀기
-    System->>수진: 진도율 33%
+    System->>수진: 맞춤형 커리큘럼 생성
     
-    Note over 수진,System: Day 2
-    수진->>System: 챕터 2-3 학습
-    System->>수진: 진도율 100%
+    Note over 수진,System: 챕터 1 학습
+    수진->>System: 개념 읽기 & 실습
+    수진->>System: 피드백 제출 (별점 5, "설명 굿")
+    System->>System: 피드백 저장 (DB)
     
-    Note over 수진,System: Day 3
-    수진->>System: 전체 퀴즈 복습
-    System->>수진: 학습 완료!
+    Note over 수진,System: 챕터 2 학습
+    수진->>System: 다음 챕터 진행
 ```
 
 ### 3.2 팀 학습 (민수의 사례)
@@ -122,7 +124,7 @@ sequenceDiagram
     actor 팀원
     
     민수->>System: "Delphi 기초" 입력
-    민수->>System: 중급, 5챕터
+    System->>민수: 목표 제안 -> "실무 프로젝트 중심" 선택
     System->>민수: 커리큘럼 생성
     
     민수->>팀원: 학습 자료 공유
@@ -132,16 +134,13 @@ sequenceDiagram
     and
         민수->>System: 챕터 3-5 학습
     end
-    
-    민수->>팀원: 주간 미팅으로 진도 체크
-    System->>민수: 팀 학습 현황 표시
 ```
 
 ---
 
 ## 4. 에러 처리 플로우
 
-### 4.1 생성 실패 처리
+### 4.1 생성 실패 처리 (Retry Logic)
 
 ```mermaid
 sequenceDiagram
@@ -151,47 +150,25 @@ sequenceDiagram
     participant AI
     
     User->>UI: 주제 입력
-    UI->>API: POST /generate-study-material
+    UI->>API: POST /generate-objectives
     
-    alt AI 응답 실패
-        API->>AI: generate_concept()
-        AI-->>API: Error (Rate Limit)
-        API-->>UI: 500 Error (detail: "생성 실패")
-        UI->>User: ❌ 에러 메시지 + [재시도]
-        User->>UI: [재시도] 클릭
-        UI->>API: POST (retry)
-    else JSON 파싱 실패
-        API->>AI: generate_concept()
-        AI-->>API: Invalid JSON
-        API->>API: clean_json_response() 재시도
-        alt 파싱 성공
-            API-->>UI: 정상 응답
-        else 파싱 최종 실패
-            API-->>UI: 500 Error
+    loop Retry (Max 3 times)
+        API->>AI: generate_content()
+        alt AI 응답 실패 / JSON 에러
+            AI-->>API: Exception
+            API->>API: Wait 1s
+        else 성공
+            AI-->>API: Valid JSON
+            break
         end
     end
-```
-
-### 4.2 RAG 검색 실패 처리
-
-```mermaid
-sequenceDiagram
-    participant API
-    participant RAG
-    participant AI
     
-    API->>RAG: search_rag_context()
-    
-    alt 벡터 DB 없음
-        RAG-->>API: "" (빈 컨텍스트)
-        API->>AI: Gemini만으로 생성 (RAG 없이)
-    else 검색 오류
-        RAG-->>API: Exception
-        API->>API: 로깅
-        API->>AI: Gemini만으로 생성
+    alt 최종 실패
+        API-->>UI: 500 Error
+        UI->>User: "일시적인 오류입니다. 다시 시도해주세요."
+    else 성공
+        API-->>UI: 정상 응답
     end
-    
-    AI-->>API: 생성된 콘텐츠
 ```
 
 ---
@@ -217,22 +194,17 @@ graph LR
 graph TD
     A[사용자 입력] --> B{파싱}
     B --> C[topic]
-    B --> D[difficulty]
-    B --> E[max_chapters]
+    B --> D[selected_objective]
     
     C --> F[RAG 검색]
-    D --> F
-    F --> G[Gemini AI]
-    G --> H[Course]
-    G --> I[Concept]
-    G --> J[Exercise]
-    G --> K[Quiz]
+    D --> G[Gemini AI]
+    F --> G
     
-    H --> L[StudyMaterialResponse]
-    I --> L
-    J --> L
-    K --> L
-    L --> M[JSON 응답]
+    G --> H[Objectives]
+    G --> I[Course]
+    G --> J[Chapter Content]
+    
+    J --> K[JSON 응답]
 ```
 
 ---
@@ -244,42 +216,18 @@ graph TD
 ```mermaid
 stateDiagram-v2
     [*] --> 주제입력
-    주제입력 --> 생성중
-    생성중 --> 커리큘럼확인
+    주제입력 --> 목표선택
+    목표선택 --> 커리큘럼생성
+    커리큘럼생성 --> 챕터학습
     
-    커리큘럼확인 --> 챕터학습
     챕터학습 --> 개념읽기
     개념읽기 --> 실습풀기
     실습풀기 --> 퀴즈풀기
+    퀴즈풀기 --> 피드백제출
     
-    퀴즈풀기 --> 이해도체크
-    이해도체크 --> 다음챕터: 이해함
-    이해도체크 --> 개념읽기: 이해 부족
-    
-    다음챕터 --> 챕터학습: 챕터 남음
-    다음챕터 --> 학습완료: 모든 챕터 완료
+    피드백제출 --> 다음챕터: 챕터 남음
+    피드백제출 --> 학습완료: 모든 챕터 완료
     학습완료 --> [*]
-```
-
-### 6.2 API 요청 상태
-
-```mermaid
-stateDiagram-v2
-    [*] --> Idle
-    Idle --> Generating: POST 요청
-    
-    Generating --> RAG_Search
-    RAG_Search --> AI_Generate
-    
-    AI_Generate --> Parsing
-    Parsing --> Success: JSON OK
-    Parsing --> Retry: JSON Error
-    
-    Retry --> AI_Generate: 재시도 (3회)
-    Retry --> Error: 최종 실패
-    
-    Success --> [*]
-    Error --> [*]
 ```
 
 ---
@@ -294,10 +242,12 @@ C4Context
     System(poppins, "PopPins II", "AI 기반 PBL 생성")
     System_Ext(gemini, "Gemini AI", "LLM & Embedding")
     SystemDb(faiss, "FAISS DB", "벡터 저장소")
+    SystemDb(sqlite, "SQLite DB", "히스토리/피드백")
     
     Rel(user, poppins, "학습 주제 입력")
     Rel(poppins, gemini, "콘텐츠 생성 요청")
     Rel(poppins, faiss, "유사 문서 검색")
+    Rel(poppins, sqlite, "로그 저장")
 ```
 
 ---
@@ -311,7 +261,7 @@ C4Context
 
 ---
 
-**문서 버전**: 1.4.2  
-**최종 수정일**: 2025-11-22  
+**문서 버전**: 1.5.0  
+**최종 수정일**: 2025-11-25  
 **작성자**: 이진걸  
 **상태**: 작성 완료

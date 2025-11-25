@@ -1,7 +1,7 @@
 import axios from 'axios';
-import type { GenerateRequest, StudyMaterialResponse, CourseResponse, ChapterContent, ChapterRequest } from '../types';
+import type { GenerateRequest, StudyMaterialResponse, CourseResponse, ChapterContent, ChapterRequest, QuizGradingRequest, QuizGradingResponse, ObjectivesResponse, FeedbackRequest } from '../types';
 
-const API_BASE_URL = 'http://localhost:8001';
+const API_BASE_URL = 'http://localhost:8002';
 
 export const generateStudyMaterial = async (data: GenerateRequest): Promise<StudyMaterialResponse> => {
     const response = await axios.post(`${API_BASE_URL}/generate-study-material`, data);
@@ -32,21 +32,17 @@ export const downloadChapter = async (data: ChapterRequest): Promise<{ filename:
     return response.data;
 };
 
-export interface QuizGradingRequest {
-    question: string;
-    answer: string;
-    chapter_title: string;
-    chapter_description: string;
-}
-
-export interface QuizGradingResponse {
-    score: number;
-    feedback: string;
-    correct_points: string[];
-    improvements: string[];
-}
-
 export const gradeQuiz = async (data: QuizGradingRequest): Promise<QuizGradingResponse> => {
     const response = await axios.post(`${API_BASE_URL}/grade-quiz`, data);
+    return response.data;
+};
+
+export const generateObjectives = async (topic: string, language: string = 'ko'): Promise<ObjectivesResponse> => {
+    const response = await axios.post(`${API_BASE_URL}/generate-objectives`, { topic, language });
+    return response.data;
+};
+
+export const submitFeedback = async (data: FeedbackRequest): Promise<{ status: string; message: string }> => {
+    const response = await axios.post(`${API_BASE_URL}/feedback`, data);
     return response.data;
 };
