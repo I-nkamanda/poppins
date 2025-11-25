@@ -180,6 +180,61 @@ API 정보를 반환합니다.
 }
 ```
 
+### GET /history
+
+생성 이력 목록을 조회합니다.
+
+#### 요청
+
+**Query Parameters:**
+
+| 파라미터 | 타입 | 필수 | 설명 | 기본값 |
+|---|---|---|---|---|
+| `skip` | integer | ❌ | 건너뛸 개수 | 0 |
+| `limit` | integer | ❌ | 가져올 개수 | 20 |
+
+#### 응답
+
+```json
+[
+  {
+    "id": 1,
+    "timestamp": "2023-11-25T10:00:00.000000",
+    "request_type": "course",
+    "topic": "파이썬 기초",
+    "model_name": "gemini-2.5-flash",
+    "latency_ms": 1500
+  }
+]
+```
+
+### GET /history/{log_id}
+
+특정 생성 이력의 상세 내용을 조회합니다.
+
+#### 요청
+
+**Path Parameters:**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|---|---|---|---|
+| `log_id` | integer | ✅ | 로그 ID |
+
+#### 응답
+
+```json
+{
+  "id": 1,
+  "timestamp": "2023-11-25T10:00:00.000000",
+  "request_type": "course",
+  "topic": "파이썬 기초",
+  "model_name": "gemini-2.5-flash",
+  "latency_ms": 1500,
+  "prompt_context": "...",
+  "generated_content": "..."
+}
+```
+
 ## 데이터 모델
 
 ### StudyTopicRequest

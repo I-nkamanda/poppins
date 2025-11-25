@@ -1,3 +1,21 @@
+
+# PopPins II
+
+- **AI 모델**: Gemini 2.5 Flash / Gemini 2.0 Flash Exp
+- **벡터 DB**: FAISS with Semantic Chunking (LangChain)
+
+## ✨ 최신 개선 사항 (v1.5.1)
+
+- 🔧 **마크다운 코드 블록 보존**: 생성된 콘텐츠의 코드 블록이 올바르게 렌더링됩니다
+- 📥 **다운로드 기능 개선**: 파일명 정규화 및 크로스 브라우저 호환성 향상
+- 🛠️ **JSON 파싱 강화**: 불완전한 응답에 대한 안정적인 처리
+- 📝 **응답 모델 확장**: 더 명확한 타입 검증 및 오류 처리
+
+## 🚀 Quick Start
+
+### 사전 요구사항
+
+- Python 3.8+
 - Node.js 18+
 - Gemini API 키 ([Google AI Studio](https://makersuite.google.com/app/apikey)에서 발급)
 

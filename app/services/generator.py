@@ -3,10 +3,17 @@ import json
 import re
 import logging
 import asyncio
+import time
 import google.generativeai as genai
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
+from datetime import datetime
+
+# DB imports
+from sqlalchemy.orm import Session
+from app.models import GenerationLog
+from app.database import SessionLocal
 
 # RAG imports
 try:
@@ -32,6 +39,7 @@ class ContentGenerator:
     def __init__(self):
         self.model = None
         self.vector_store = None
+        self.model_name = "gemini-2.5-flash"
         self.setup_gemini()
         self.setup_rag()
 
@@ -42,8 +50,7 @@ class ContentGenerator:
             raise ValueError("GEMINI_API_KEY environment variable is not set.")
         
         genai.configure(api_key=api_key)
-        # Use 2.5 flash or fallback
-        self.model = genai.GenerativeModel("gemini-2.5-flash") 
+        self.model = genai.GenerativeModel(self.model_name)
 
     def setup_rag(self):
         use_rag = os.getenv("USE_RAG", "true").lower() == "true"
@@ -55,9 +62,7 @@ class ContentGenerator:
         embedding_model = os.getenv("VECTOR_DB_EMBEDDING_MODEL", "gemini")
 
         try:
-            # Resolve path relative to CWD (usually project root)
             db_path = Path(vector_db_path)
-            
             if not db_path.exists():
                 logger.warning(f"Vector DB not found at {db_path}")
                 return
@@ -77,6 +82,25 @@ class ContentGenerator:
         except Exception as e:
             logger.error(f"Failed to load Vector DB: {e}")
             self.vector_store = None
+
+    def _log_to_db(self, request_type: str, topic: str, prompt_context: str, generated_content: str, latency_ms: int):
+        """Logs the generation event to the database."""
+        try:
+            db = SessionLocal()
+            log_entry = GenerationLog(
+                request_type=request_type,
+                topic=topic,
+                prompt_context=prompt_context,
+                generated_content=generated_content,
+                model_name=self.model_name,
+                latency_ms=latency_ms,
+                timestamp=datetime.utcnow()
+            )
+            db.add(log_entry)
+            db.commit()
+            db.close()
+        except Exception as e:
+            logger.error(f"Failed to log to DB: {e}")
 
     def search_context(self, query: str, k: int = 3) -> str:
         if not self.vector_store:
@@ -100,12 +124,9 @@ class ContentGenerator:
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError:
-            # Simple retry logic for broken JSON
             match = re.search(r"\{.*\}", cleaned, re.DOTALL)
             if match:
                 json_str = match.group()
-                # Fix common issues like trailing commas or unclosed lists if possible
-                # (Simplified version of the original robust logic)
                 try:
                     return json.loads(json_str)
                 except:
@@ -134,6 +155,7 @@ class ContentGenerator:
         return {"title": title, "description": description, "contents": contents}
 
     async def generate_course(self, topic: str, description: str, difficulty: str, max_chapters: int) -> dict:
+        start_time = time.time()
         course_description = description or topic
         search_query = f"{topic} {course_description} 커리큘럼"
         rag_context = self.search_context(search_query, k=3)
@@ -198,9 +220,17 @@ DO NOT start with "Okay", or "Alright" or any preambles. Just the output, please
             f"{system_message}\n\n{prompt}",
             generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=4096)
         )
-        return self._clean_json(response.text)
+        
+        result = self._clean_json(response.text)
+        
+        # Log to DB
+        latency = int((time.time() - start_time) * 1000)
+        self._log_to_db("course", topic, prompt, json.dumps(result, ensure_ascii=False), latency)
+        
+        return result
 
     async def generate_concept(self, course_title: str, course_desc: str, chapter_title: str, chapter_desc: str) -> dict:
+        start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 개념 설명"
         rag_context = self.search_context(search_query, k=3)
 
@@ -247,9 +277,17 @@ output language: ko
             f"{system_message}\n\n{prompt}",
             generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192)
         )
-        return self._extract_content(response.text)
+        
+        result = self._extract_content(response.text)
+        
+        # Log to DB
+        latency = int((time.time() - start_time) * 1000)
+        self._log_to_db("concept", chapter_title, prompt, json.dumps(result, ensure_ascii=False), latency)
+
+        return result
 
     async def generate_exercise(self, course_title: str, course_desc: str, chapter_title: str, chapter_desc: str) -> dict:
+        start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 실습 연습"
         rag_context = self.search_context(search_query, k=3)
 
@@ -303,9 +341,17 @@ output language: ko
             f"{system_message}\n\n{prompt}",
             generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192)
         )
-        return self._extract_content(response.text)
+        
+        result = self._extract_content(response.text)
+        
+        # Log to DB
+        latency = int((time.time() - start_time) * 1000)
+        self._log_to_db("exercise", chapter_title, prompt, json.dumps(result, ensure_ascii=False), latency)
+
+        return result
 
     async def generate_quiz(self, course_title: str, chapter_title: str, chapter_desc: str, course_prompt: str = "") -> dict:
+        start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 퀴즈 문제"
         rag_context = self.search_context(search_query, k=3)
 
@@ -363,9 +409,17 @@ If reference materials are provided, use them to create questions that test unde
             f"{system_message}\n\n{prompt}",
             generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192)
         )
-        return self._clean_json(response.text)
+        
+        result = self._clean_json(response.text)
+        
+        # Log to DB
+        latency = int((time.time() - start_time) * 1000)
+        self._log_to_db("quiz", chapter_title, prompt, json.dumps(result, ensure_ascii=False), latency)
+
+        return result
 
     async def grade_quiz(self, question: str, answer: str, chapter_title: str, chapter_desc: str) -> dict:
+        start_time = time.time()
         prompt = f"""다음은 학습 퀴즈 문제와 학생의 답안입니다.
 
 **문제:**
@@ -404,4 +458,11 @@ If reference materials are provided, use them to create questions that test unde
             f"{system_message}\n\n{prompt}",
             generation_config=genai.types.GenerationConfig(temperature=0.3, max_output_tokens=4096)
         )
-        return self._clean_json(response.text)
+        
+        result = self._clean_json(response.text)
+        
+        # Log to DB
+        latency = int((time.time() - start_time) * 1000)
+        self._log_to_db("grading", chapter_title, prompt, json.dumps(result, ensure_ascii=False), latency)
+
+        return result

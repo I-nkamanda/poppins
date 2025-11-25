@@ -1,13 +1,19 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Any
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 import asyncio
 import logging
 from logging.handlers import RotatingFileHandler
+import json
+
+# DB imports
+from sqlalchemy.orm import Session
+from app.database import engine, Base, get_db
+from app.models import GenerationLog
 
 # Import ContentGenerator service
 from app.services.generator import ContentGenerator
@@ -59,18 +65,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# DB 초기화
+Base.metadata.create_all(bind=engine)
+
 # Initialize ContentGenerator
 try:
     generator = ContentGenerator()
     logger.info("ContentGenerator initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize ContentGenerator: {e}")
-    # We don't raise here to allow app to start, but endpoints might fail
     generator = None
 
 # 챕터 콘텐츠 캐시 (메모리 기반, DB 없이)
-# 키: (course_title, chapter_title, chapter_description) 튜플
-# 값: ChapterContent 객체
 chapter_cache = {}
 
 
@@ -142,6 +148,21 @@ class DownloadResponse(BaseModel):
     content: str
 
 
+# History Response Model
+class HistoryItem(BaseModel):
+    id: int
+    timestamp: str
+    request_type: str
+    topic: str
+    model_name: str
+    latency_ms: Optional[int]
+    # prompt_context and generated_content are excluded for list view to keep it light
+
+class HistoryDetail(HistoryItem):
+    prompt_context: str
+    generated_content: str
+
+
 # 메인 API 엔드포인트
 
 @app.post("/generate-course", response_model=CourseResponse)
@@ -206,7 +227,7 @@ async def generate_chapter_content_only(request: ChapterRequest):
                 course_title=request.course_title,
                 chapter_title=request.chapter_title,
                 chapter_desc=request.chapter_description,
-                course_prompt=request.course_title # Using course title as prompt context
+                course_prompt=request.course_title
             ),
             return_exceptions=True,
         )
@@ -273,7 +294,6 @@ async def generate_study_material(request: StudyTopicRequest):
                 chapter_description=chapter.chapterDescription,
             )
 
-            # generate_chapter_content_only 재사용 (캐시 활용 가능)
             content = await generate_chapter_content_only(chapter_request)
             chapters_content.append(content)
 
@@ -390,6 +410,45 @@ async def grade_quiz(request: QuizGradingRequest):
     except Exception as e:
         logger.error(f"퀴즈 채점 실패: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"퀴즈 채점 실패: {str(e)}")
+
+
+# History Endpoints
+@app.get("/history", response_model=List[HistoryItem])
+def get_history(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
+    """
+    생성 이력을 조회합니다.
+    """
+    logs = db.query(GenerationLog).order_by(GenerationLog.timestamp.desc()).offset(skip).limit(limit).all()
+    return [
+        HistoryItem(
+            id=log.id,
+            timestamp=log.timestamp.isoformat(),
+            request_type=log.request_type,
+            topic=log.topic,
+            model_name=log.model_name,
+            latency_ms=log.latency_ms
+        ) for log in logs
+    ]
+
+@app.get("/history/{log_id}", response_model=HistoryDetail)
+def get_history_detail(log_id: int, db: Session = Depends(get_db)):
+    """
+    특정 생성 이력의 상세 내용을 조회합니다.
+    """
+    log = db.query(GenerationLog).filter(GenerationLog.id == log_id).first()
+    if not log:
+        raise HTTPException(status_code=404, detail="Log not found")
+    
+    return HistoryDetail(
+        id=log.id,
+        timestamp=log.timestamp.isoformat(),
+        request_type=log.request_type,
+        topic=log.topic,
+        model_name=log.model_name,
+        latency_ms=log.latency_ms,
+        prompt_context=log.prompt_context,
+        generated_content=log.generated_content
+    )
 
 
 if __name__ == "__main__":
