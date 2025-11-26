@@ -2,16 +2,16 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Architecture Diagram & System Design  
-**버전**: 1.5.0  
+**버전**: 1.9.0  
 **작성일**: 2025-11-22  
 **작성자**: 이진걸  
-**최종 업데이트**: 2025-11-25
+**최종 업데이트**: 2025-11-26
 
 ---
 
 ## 📌 개요
 
-PopPins II는 AI 기반 PBL(Problem-Based Learning) 학습 자료 자동 생성 플랫폼으로, **FastAPI Backend**, **Google Gemini AI**, **FAISS Vector DB**를 핵심으로 하는 3-Layer Architecture입니다.
+PopPins II는 AI 기반 PBL(Problem-Based Learning) 학습 자료 자동 생성 플랫폼으로, **FastAPI Backend**, **Google Gemini AI**, **FAISS Vector DB**를 핵심으로 하는 3-Layer Architecture입니다. v1.9.0에서는 **SQLite 기반의 영구 저장소(Persistence)**와 **대시보드(Dashboard)** 기능이 추가되었습니다.
 
 ---
 
@@ -27,7 +27,7 @@ graph TB
     end
     
     subgraph "Application Layer"
-        C[FastAPI Backend<br/>Port: 8001]
+        C[FastAPI Backend<br/>Port: 8002]
         D[REST API Endpoints]
     end
     
@@ -43,7 +43,7 @@ graph TB
     D --> C
     C -->|Generate Content| E
     C -->|Search Context| F
-    C -->|Log/Feedback| H
+    C -->|Read/Write Data| H
     F -.->|Index| G
     E -->|JSON Response| C
     C -->|Study Material| D
@@ -75,18 +75,21 @@ graph TB
 ```
 src/
 ├── pages/
-│   ├── HomePage.tsx           # 주제 입력 폼
-│   ├── ObjectivesPage.tsx     # 학습 목표 선택 (New)
-│   ├── ResultPage.tsx         # 커리큘럼 표시
+│   ├── DashboardPage.tsx      # (New) 메인 대시보드 (최근 학습 목록)
+│   ├── NewCoursePage.tsx      # (Renamed) 주제 입력 및 코스 생성
+│   ├── ObjectivesPage.tsx     # 학습 목표 선택
+│   ├── ResultPage.tsx         # 커리큘럼 표시 (DB 연동)
 │   └── ChapterPage.tsx        # 챕터 상세 (개념, 실습, 퀴즈, 피드백)
 ├── components/
 │   └── MarkdownViewer.tsx     # 마크다운 렌더링 (코드 블록 커스텀)
 ├── services/
 │   └── api.ts                 # API 호출 함수
-└── App.tsx                    # 메인 앱
+└── App.tsx                    # 메인 앱 및 라우팅
 ```
 
 **주요 기능**:
+- ✅ **대시보드**: 최근 학습한 코스 목록 조회 및 이어하기
+- ✅ **영구 저장**: 새로고침 후에도 학습 데이터 유지
 - ✅ Lazy-Loading 커리큘럼 (빠른 초기 로드)
 - ✅ 학습 목표 선택 (기초/실무/심화)
 - ✅ 챕터별 상세 콘텐츠 로드
@@ -113,7 +116,7 @@ src/
 app/
 ├── main_with_RAG.py          # 메인 애플리케이션
 ├── database.py               # DB 연결 설정
-├── models.py                 # DB 모델 (History, Feedback)
+├── models.py                 # DB 모델 (Course, Chapter, History, Feedback)
 ├── services/
 │   └── generator.py          # AI 생성 로직 (Retry Logic 포함)
 ├── .env                       # 환경 변수
@@ -126,9 +129,11 @@ app/
 
 | Method | Endpoint | 설명 | 상태 |
 |--------|----------|------|------|
+| GET | `/courses` | (New) 생성된 코스 목록 조회 | ✅ |
+| GET | `/courses/{id}` | (New) 특정 코스 상세 조회 | ✅ |
 | POST | `/generate-objectives` | 학습 목표 3가지 제안 | ✅ |
-| POST | `/generate-course` | 커리큘럼만 생성 (Lazy-Loading) | ✅ |
-| POST | `/generate-chapter-content` | 챕터 상세 내용 생성 | ✅ |
+| POST | `/generate-course` | 커리큘럼 생성 및 DB 저장 | ✅ |
+| POST | `/generate-chapter-content` | 챕터 상세 내용 생성 및 DB 저장 | ✅ |
 | POST | `/generate-study-material` | 학습 자료 일괄 생성 (하위 호환) | ✅ |
 | POST | `/download-chapter` | 챕터 Markdown 다운로드 | ✅ |
 | POST | `/grade-quiz` | 퀴즈 AI 채점 | ✅ |
@@ -141,7 +146,7 @@ app/
 - `initialize_rag_vector_db()`: FAISS 벡터 DB 초기화
 - `search_rag_context()`: RAG 컨텍스트 검색
 - `generate_learning_objectives()`: 학습 목표 생성 (Retry Logic)
-- `generate_course()`: 커리큘럼 생성
+- `generate_course()`: 커리큘럼 생성 및 DB 저장
 - `generate_concept()`: 개념 정리 생성
 - `generate_exercise()`: 실습 과제 생성
 - `generate_quiz()`: 퀴즈 생성
@@ -229,7 +234,13 @@ sequenceDiagram
     participant Gemini
     participant DB
     
-    User->>Frontend: 학습 주제 입력
+    User->>Frontend: 대시보드 접속
+    Frontend->>FastAPI: GET /courses
+    FastAPI->>DB: 코스 목록 조회
+    DB-->>FastAPI: Course List
+    FastAPI-->>Frontend: Course List Display
+    
+    User->>Frontend: "새 코스 생성" -> 주제 입력
     Frontend->>FastAPI: POST /generate-objectives
     FastAPI->>Gemini: 학습 목표 3가지 생성 요청
     Gemini-->>FastAPI: Objectives JSON
@@ -243,41 +254,45 @@ sequenceDiagram
     RAG-->>FastAPI: 관련 문서 (Top-K=3)
     FastAPI->>Gemini: 커리큘럼 생성 요청
     Gemini-->>FastAPI: Course JSON
-    FastAPI->>DB: 생성 이력 저장
+    FastAPI->>DB: **코스 및 챕터 정보 저장**
+    FastAPI-->>Frontend: Course Response (ID 포함)
     
-    loop 각 챕터마다 (Lazy Loading)
-        Note over FastAPI: 2. ConceptMaker
-        FastAPI->>RAG: 개념 설명 검색
-        RAG-->>FastAPI: 관련 문서
-        FastAPI->>Gemini: 개념 정리 생성
-        Gemini-->>FastAPI: Concept Markdown
-        
-        Note over FastAPI: 3. ExerciseMaker
-        FastAPI->>RAG: 실습 예제 검색
-        RAG-->>FastAPI: 관련 문서
-        FastAPI->>Gemini: 실습 문제 생성
-        Gemini-->>FastAPI: Exercise Markdown
-        
-        Note over FastAPI: 4. QuizMaker
-        FastAPI->>RAG: 핵심 개념 검색
-        RAG-->>FastAPI: 관련 문서
-        FastAPI->>Gemini: 퀴즈 생성
-        Gemini-->>FastAPI: Quiz JSON
-    end
+    Frontend->>User: 커리큘럼 화면 (ResultPage)
+    
+    User->>Frontend: 챕터 선택
+    Frontend->>FastAPI: POST /generate-chapter-content
+    
+    Note over FastAPI: 2. Content Generation
+    FastAPI->>RAG: 관련 내용 검색
+    RAG-->>FastAPI: 관련 문서
+    FastAPI->>Gemini: 콘텐츠(개념/실습/퀴즈) 생성
+    Gemini-->>FastAPI: Content Markdown
+    FastAPI->>DB: **챕터 콘텐츠 업데이트**
     
     FastAPI-->>Frontend: ChapterContent
     Frontend-->>User: 학습 자료 표시
-    
-    User->>Frontend: 피드백 제출
-    Frontend->>FastAPI: POST /feedback
-    FastAPI->>DB: 피드백 저장
 ```
 
 ---
 
-## 🗄️ Database Architecture (✅ 1차 완료)
+## 🗄️ Database Architecture (✅ 2차 완료)
 
 ### SQLite Schema
+
+**Course** (New):
+- `id`: PK
+- `topic`: 주제
+- `description`: 설명
+- `level`: 난이도
+- `created_at`: 생성 시간
+
+**Chapter** (New):
+- `id`: PK
+- `course_id`: FK (Course.id)
+- `title`: 챕터 제목
+- `description`: 챕터 설명
+- `content`: 본문 내용 (Markdown)
+- `is_completed`: 완료 여부
 
 **GenerationLog**:
 - `id`: PK
@@ -301,7 +316,7 @@ sequenceDiagram
 - `comment`: 코멘트
 - `timestamp`: 제출 시간
 
-**상태**: ✅ MVP 구현 완료
+**상태**: ✅ Dashboard & Persistence 구현 완료
 
 ---
 
@@ -397,7 +412,7 @@ graph LR
 | AI | Google Gemini | 2.5 Flash | ✅ 완료 |
 | Embedding | text-embedding-004 | - | ✅ 완료 |
 | Vector DB | FAISS (Gemini) | python_textbook_gemini_db | ✅ 완료 |
-| Database | In-Memory Cache | - | ✅ 완료 |
+| Database | SQLite (Persistence) | - | ✅ 완료 |
 | Deployment | Local Development | - | ✅ 완료 |
 
 ---
@@ -412,7 +427,8 @@ graph LR
 
 ---
 
-**문서 버전**: 1.5.0  
-**최종 수정일**: 2025-11-25  
-**상태**: 현재 아키텍처 문서화 완료 (Backend + Frontend + DB)  
+**문서 버전**: 1.9.0  
+**최종 수정일**: 2025-11-26  
+**상태**: 현재 아키텍처 문서화 완료 (Backend + Frontend + DB + Persistence)  
 **다음 단계**: 배포 파이프라인 구축
+

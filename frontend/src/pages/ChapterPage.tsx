@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import type { Course, ChapterContent, QuizGradingResponse } from '../types';
 import { generateChapterContent, downloadChapter, gradeQuiz, submitFeedback } from '../services/api';
 import MarkdownViewer from '../components/MarkdownViewer';
+import SurveyModal from '../components/SurveyModal';
 
 type TabType = 'concept' | 'exercise' | 'quiz';
 
@@ -22,6 +23,9 @@ export default function ChapterPage() {
     // Feedback State
     const [rating, setRating] = useState<number>(0);
     const [comment, setComment] = useState('');
+
+    // Survey State
+    const [showSurvey, setShowSurvey] = useState(false);
     const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
     const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
@@ -46,6 +50,12 @@ export default function ChapterPage() {
             setIsLoading(true);
             setError(null);
             setContent(null); // Reset content while loading
+
+            // Show survey only if not completed yet in this session
+            const hasCompletedSurvey = sessionStorage.getItem('survey_completed');
+            if (!hasCompletedSurvey) {
+                setShowSurvey(true);
+            }
 
             try {
                 const data = await generateChapterContent({
@@ -425,16 +435,34 @@ export default function ChapterPage() {
                     >
                         이전 챕터
                     </button>
-                    <button
-                        onClick={handleNext}
-                        disabled={chapterIndex === course.chapters.length - 1 || isLoading}
-                        className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 ${(chapterIndex === course.chapters.length - 1 || isLoading) ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                    >
-                        다음 챕터
-                    </button>
+                    {chapterIndex === course.chapters.length - 1 ? (
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            disabled={isLoading}
+                            className={`px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            ✓ 학습 완료
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleNext}
+                            disabled={isLoading}
+                            className={`px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            다음 챕터
+                        </button>
+                    )}
                 </div>
             </main>
+
+            <SurveyModal
+                isOpen={showSurvey}
+                onComplete={() => {
+                    sessionStorage.setItem('survey_completed', 'true');
+                    setShowSurvey(false);
+                }}
+                isGenerating={isLoading}
+            />
         </div>
     );
 }

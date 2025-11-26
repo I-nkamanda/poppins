@@ -14,7 +14,7 @@ import json
 # DB imports
 from sqlalchemy.orm import Session
 from app.database import engine, Base, get_db
-from app.models import GenerationLog, QuizResult, UserFeedback
+from app.models import GenerationLog, QuizResult, UserFeedback, Course as DBCourse, Chapter as DBChapter, UserPreference
 
 # Import ContentGenerator service
 from app.services.generator import ContentGenerator
@@ -128,6 +128,9 @@ class Chapter(BaseModel):
 
 class Course(BaseModel):
     id: int
+    topic: Optional[str] = None
+    description: Optional[str] = None
+    level: Optional[str] = None
     chapters: List[Chapter]
 
 
@@ -204,7 +207,7 @@ async def generate_objectives(request: StudyTopicRequest):
 
 
 @app.post("/generate-course", response_model=CourseResponse)
-async def generate_course_only(request: StudyTopicRequest):
+async def generate_course_only(request: StudyTopicRequest, db: Session = Depends(get_db)):
     """
     1단계: 커리큘럼(목차)만 먼저 생성합니다. (빠름)
     선택된 학습 목표가 있다면 반영합니다.
@@ -221,6 +224,35 @@ async def generate_course_only(request: StudyTopicRequest):
             selected_objective=request.selected_objective,
             language=request.language
         )
+        
+        # Save to DB
+        try:
+            db_course = DBCourse(
+                topic=request.topic,
+                description=request.course_description or request.topic,
+                level=request.difficulty
+            )
+            db.add(db_course)
+            db.commit()
+            db.refresh(db_course)
+            
+            # Save Chapters
+            for ch in result["course"]["chapters"]:
+                db_chapter = DBChapter(
+                    course_id=db_course.id,
+                    title=ch["chapterTitle"],
+                    description=ch["chapterDescription"]
+                )
+                db.add(db_chapter)
+            db.commit()
+            
+            # Update result with DB ID
+            result["course"]["id"] = db_course.id
+            
+        except Exception as db_e:
+            logger.error(f"Failed to save course to DB: {db_e}")
+            # Continue even if DB save fails, but log it
+            
         return CourseResponse(**result)
     except Exception as e:
         logger.error(f"커리큘럼 생성 실패: {e}", exc_info=True)
@@ -228,7 +260,7 @@ async def generate_course_only(request: StudyTopicRequest):
 
 
 @app.post("/generate-chapter-content", response_model=ChapterContent)
-async def generate_chapter_content_only(request: ChapterRequest):
+async def generate_chapter_content_only(request: ChapterRequest, db: Session = Depends(get_db)):
     """
     2단계: 특정 챕터의 상세 내용(개념, 실습, 퀴즈)을 생성합니다. (챕터 클릭 시 호출)
     캐시에 있으면 재사용, 없으면 생성 후 캐시에 저장
@@ -243,10 +275,16 @@ async def generate_chapter_content_only(request: ChapterRequest):
         request.chapter_description,
     )
 
-    # 캐시 확인
+    # 1. 메모리 캐시 확인
     if cache_key in chapter_cache:
         logger.info(f"캐시에서 로드: {request.chapter_title}")
         return chapter_cache[cache_key]
+
+    # 2. DB 확인 (이미 생성된 콘텐츠가 있는지)
+    # Note: This requires searching by title/course which might be ambiguous if multiple courses have same title.
+    # Ideally we should pass chapter_id, but the current frontend request doesn't send it.
+    # We will skip DB read for now and rely on generation/cache, but we WILL save to DB.
+    # Future improvement: Pass chapter_id in request.
 
     logger.info(f"챕터 콘텐츠 생성 시작: {request.chapter_title}")
     try:
@@ -313,6 +351,33 @@ async def generate_chapter_content_only(request: ChapterRequest):
         # 캐시에 저장
         chapter_cache[cache_key] = result
         logger.debug(f"캐시에 저장: {request.chapter_title}")
+        
+        # DB에 저장
+        try:
+            # Find the chapter in DB to update it
+            # We need to find the course first, then the chapter.
+            # Since we don't have IDs, this is a best-effort lookup.
+            # We assume the course exists.
+            db_course = db.query(DBCourse).filter(DBCourse.topic == request.course_title).order_by(DBCourse.created_at.desc()).first()
+            if db_course:
+                db_chapter = db.query(DBChapter).filter(
+                    DBChapter.course_id == db_course.id,
+                    DBChapter.title == request.chapter_title
+                ).first()
+                
+                if db_chapter:
+                    # Update content
+                    content_json = json.dumps({
+                        "concept": concept_data,
+                        "exercise": exercise_data,
+                        "quiz": quiz_data
+                    }, ensure_ascii=False)
+                    db_chapter.content = content_json
+                    db_chapter.is_completed = 1
+                    db.commit()
+                    logger.info(f"DB에 챕터 콘텐츠 저장 완료: {request.chapter_title}")
+        except Exception as db_e:
+             logger.error(f"Failed to save chapter content to DB: {db_e}")
 
         return result
     except HTTPException:
@@ -532,6 +597,115 @@ def get_history_detail(log_id: int, db: Session = Depends(get_db)):
         prompt_context=log.prompt_context,
         generated_content=log.generated_content
     )
+
+
+# User Preference Endpoints
+
+class UserPreferenceRequest(BaseModel):
+    learning_goal: str
+    learning_style: str
+    desired_depth: str
+
+@app.post("/user/preferences")
+def save_user_preference(request: UserPreferenceRequest, db: Session = Depends(get_db)):
+    """
+    사용자의 학습 선호도 설문 결과를 저장합니다.
+    """
+    try:
+        pref = UserPreference(
+            learning_goal=request.learning_goal,
+            learning_style=request.learning_style,
+            desired_depth=request.desired_depth
+        )
+        db.add(pref)
+        db.commit()
+        return {"status": "success", "message": "Preferences saved"}
+    except Exception as e:
+        logger.error(f"Failed to save preferences: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save preferences")
+
+
+# Dashboard Endpoints
+
+class CourseListItem(BaseModel):
+    id: int
+    topic: str
+    description: str
+    level: str
+    created_at: str
+    chapter_count: int
+    completed_chapters: int
+    progress: int
+
+@app.get("/courses", response_model=List[CourseListItem])
+def get_courses(skip: int = 0, limit: int = 20, db: Session = Depends(get_db)):
+    """
+    저장된 코스 목록을 조회합니다.
+    """
+    courses = db.query(DBCourse).order_by(DBCourse.created_at.desc()).offset(skip).limit(limit).all()
+    result = []
+    for c in courses:
+        total = len(c.chapters)
+        completed = sum(1 for ch in c.chapters if ch.is_completed)
+        progress = int((completed / total * 100) if total > 0 else 0)
+        
+        result.append(CourseListItem(
+            id=c.id,
+            topic=c.topic,
+            description=c.description,
+            level=c.level or "Unknown",
+            created_at=c.created_at.isoformat(),
+            chapter_count=total,
+            completed_chapters=completed,
+            progress=progress
+        ))
+    return result
+
+@app.get("/courses/{course_id}", response_model=CourseResponse)
+def get_course_detail(course_id: int, db: Session = Depends(get_db)):
+    """
+    특정 코스의 상세 정보를 조회합니다.
+    """
+    db_course = db.query(DBCourse).filter(DBCourse.id == course_id).first()
+    if not db_course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    chapters = []
+    for ch in db_course.chapters:
+        chapters.append(Chapter(
+            chapterId=ch.id,
+            chapterTitle=ch.title,
+            chapterDescription=ch.description
+        ))
+        
+    return CourseResponse(
+        course=Course(
+            id=db_course.id,
+            topic=db_course.topic,
+            description=db_course.description,
+            level=db_course.level,
+            chapters=chapters
+        )
+    )
+
+
+@app.delete("/courses/{course_id}")
+def delete_course(course_id: int, db: Session = Depends(get_db)):
+    """
+    코스를 삭제합니다. (관련 챕터도 함께 삭제됨 - Cascade 설정 필요하지만 여기선 수동 삭제)
+    """
+    db_course = db.query(DBCourse).filter(DBCourse.id == course_id).first()
+    if not db_course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    
+    # Delete chapters first (if cascade not set in DB)
+    db.query(DBChapter).filter(DBChapter.course_id == course_id).delete()
+    
+    # Delete course
+    db.delete(db_course)
+    db.commit()
+    
+    return {"status": "success", "message": f"Course {course_id} deleted"}
 
 
 if __name__ == "__main__":

@@ -42,6 +42,14 @@ class ContentGenerator:
         self.model_name = "gemini-2.5-flash"
         self.setup_gemini()
         self.setup_rag()
+        
+        # Safety settings to prevent finish_reason: 2 (BLOCK_NONE)
+        self.safety_settings = [
+            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+            {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        ]
 
     def setup_gemini(self):
         api_key = os.getenv("GEMINI_API_KEY")
@@ -102,11 +110,14 @@ class ContentGenerator:
         except Exception as e:
             logger.error(f"Failed to log to DB: {e}")
 
-    def search_context(self, query: str, k: int = 3) -> str:
+    async def search_context(self, query: str, k: int = 3) -> str:
         if not self.vector_store:
             return ""
         try:
-            docs = self.vector_store.similarity_search(query, k=k)
+            loop = asyncio.get_running_loop()
+            # Run synchronous FAISS search in a thread pool
+            docs = await loop.run_in_executor(None, lambda: self.vector_store.similarity_search(query, k=k))
+            
             if not docs: return ""
             
             context_parts = []
@@ -134,25 +145,62 @@ class ContentGenerator:
             raise ValueError(f"Failed to parse JSON: {cleaned[:100]}...")
 
     def _extract_content(self, raw: str) -> dict:
+        """Extract content from Gemini response, handling both JSON and partial responses."""
         cleaned = raw.replace("```json", "").replace("```", "").strip()
-        title_match = re.search(r'"title"\s*:\s*"([^"]*)"', cleaned)
-        desc_match = re.search(r'"description"\s*:\s*"([^"]*)"', cleaned)
         
-        title = title_match.group(1) if title_match else ""
-        description = desc_match.group(1) if desc_match else ""
-        
-        contents = ""
-        if '"contents"' in cleaned:
-            parts = cleaned.split('"contents"')
-            if len(parts) > 1:
-                c_part = parts[1].strip()
-                if c_part.startswith(":"): c_part = c_part[1:].strip()
-                if c_part.startswith('"'): c_part = c_part[1:]
-                last_quote = c_part.rfind('"')
-                if last_quote > 0: c_part = c_part[:last_quote]
-                contents = c_part.replace("\\n", "\n").replace("\\t", "\t").replace('\\"', '"')
-        
-        return {"title": title, "description": description, "contents": contents}
+        # Try proper JSON parsing first
+        try:
+            parsed = json.loads(cleaned)
+            return {
+                "title": parsed.get("title", ""),
+                "description": parsed.get("description", ""),
+                "contents": parsed.get("contents", "")
+            }
+        except json.JSONDecodeError:
+            # Fallback: Try to extract JSON object
+            try:
+                match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+                if match:
+                    parsed = json.loads(match.group())
+                    return {
+                        "title": parsed.get("title", ""),
+                        "description": parsed.get("description", ""),
+                        "contents": parsed.get("contents", "")
+                    }
+            except:
+                pass
+            
+            # Last resort: manual extraction for malformed JSON
+            title_match = re.search(r'"title"\s*:\s*"([^"]*)"', cleaned)
+            desc_match = re.search(r'"description"\s*:\s*"([^"]*)"', cleaned)
+            
+            title = title_match.group(1) if title_match else ""
+            description = desc_match.group(1) if desc_match else ""
+            
+            # For contents, find the content between "contents": and the last }
+            contents = ""
+            if '"contents"' in cleaned:
+                # Find where contents starts
+                contents_start = cleaned.find('"contents"')
+                if contents_start != -1:
+                    # Find the colon after "contents"
+                    colon_pos = cleaned.find(':', contents_start)
+                    if colon_pos != -1:
+                        # Skip whitespace and opening quote
+                        content_start = colon_pos + 1
+                        while content_start < len(cleaned) and cleaned[content_start] in ' \t\n\r':
+                            content_start += 1
+                        if content_start < len(cleaned) and cleaned[content_start] == '"':
+                            content_start += 1
+                            # Find the last quote before the final }
+                            # We need to be careful about escaped quotes
+                            content_end = cleaned.rfind('"', content_start, cleaned.rfind('}'))
+                            if content_end > content_start:
+                                contents = cleaned[content_start:content_end]
+                                # Unescape
+                                contents = contents.replace('\\n', '\n').replace('\\t', '\t').replace('\\"', '"')
+            
+            return {"title": title, "description": description, "contents": contents}
 
     def get_learning_context(self, course_title: str) -> str:
         """Fetches recent quiz results and feedback for the course to build a learning context."""
@@ -243,7 +291,8 @@ class ContentGenerator:
 
                 response = await self.model.generate_content_async(
                     f"{system_message}\n\n{prompt}",
-                    generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=2048)
+                    generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=2048),
+                    safety_settings=self.safety_settings
                 )
                 result = self._clean_json(response.text)
                 
@@ -264,7 +313,7 @@ class ContentGenerator:
         start_time = time.time()
         course_description = description or topic
         search_query = f"{topic} {course_description} 커리큘럼"
-        rag_context = self.search_context(search_query, k=3)
+        rag_context = await self.search_context(search_query, k=3)
         
         lang_instruction = "IMPORTANT: All output (titles, descriptions) MUST be in Korean." if language == "ko" else "IMPORTANT: All output (titles, descriptions) MUST be in English."
 
@@ -330,9 +379,10 @@ If reference materials are provided, use them to structure the course chapters i
 You are working as part of an AI system, so no chit-chat and no explaining what you're doing and why.
 DO NOT start with "Okay", or "Alright" or any preambles. Just the output, please."""
 
-        response = self.model.generate_content(
+        response = await self.model.generate_content_async(
             f"{system_message}\n\n{prompt}",
-            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=4096)
+            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=4096),
+            safety_settings=self.safety_settings
         )
         
         result = self._clean_json(response.text)
@@ -346,7 +396,7 @@ DO NOT start with "Okay", or "Alright" or any preambles. Just the output, please
     async def generate_concept(self, course_title: str, course_desc: str, chapter_title: str, chapter_desc: str, learning_context: str = "") -> dict:
         start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 개념 설명"
-        rag_context = self.search_context(search_query, k=3)
+        rag_context = await self.search_context(search_query, k=3)
 
         prompt_parts = [
             f"Course Title: {course_title}",
@@ -390,9 +440,10 @@ output language: ko
 ⚠️ 절대로 {"output": {...}} 형태로 감싸지 말고, 
 오직 {"title": "...", "description": "...", "contents": "..."} 구조로만 출력하세요."""
 
-        response = self.model.generate_content(
+        response = await self.model.generate_content_async(
             f"{system_message}\n\n{prompt}",
-            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192)
+            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192),
+            safety_settings=self.safety_settings
         )
         
         result = self._extract_content(response.text)
@@ -406,7 +457,7 @@ output language: ko
     async def generate_exercise(self, course_title: str, course_desc: str, chapter_title: str, chapter_desc: str, learning_context: str = "") -> dict:
         start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 실습 연습"
-        rag_context = self.search_context(search_query, k=3)
+        rag_context = await self.search_context(search_query, k=3)
 
         prompt_parts = [
             f"Course Title: {course_title}",
@@ -457,9 +508,10 @@ output language: ko
 ⚠️ 절대로 {"output": {...}} 형태로 감싸지 말고, 
 오직 {"title": "...", "description": "...", "contents": "..."} 구조로만 출력하세요."""
 
-        response = self.model.generate_content(
+        response = await self.model.generate_content_async(
             f"{system_message}\n\n{prompt}",
-            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192)
+            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192),
+            safety_settings=self.safety_settings
         )
         
         result = self._extract_content(response.text)
@@ -473,7 +525,7 @@ output language: ko
     async def generate_quiz(self, course_title: str, chapter_title: str, chapter_desc: str, course_prompt: str = "", learning_context: str = "") -> dict:
         start_time = time.time()
         search_query = f"{chapter_title} {chapter_desc} 퀴즈 문제"
-        rag_context = self.search_context(search_query, k=3)
+        rag_context = await self.search_context(search_query, k=3)
 
         prompt_parts = [
             f"Course Title: {course_title}",
@@ -528,9 +580,10 @@ If reference materials are provided, use them to create questions that test unde
 ⚠️ 절대로 {"output": {...}} 형태로 감싸지 말고, 
 오직 {"title": "...", "description": "...", "contents": "..."} 구조로만 출력하세요."""
 
-        response = self.model.generate_content(
+        response = await self.model.generate_content_async(
             f"{system_message}\n\n{prompt}",
-            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192)
+            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192),
+            safety_settings=self.safety_settings
         )
         
         result = self._clean_json(response.text)
@@ -577,9 +630,10 @@ If reference materials are provided, use them to create questions that test unde
   "improvements": ["문자열 배열"]
 }"""
 
-        response = self.model.generate_content(
+        response = await self.model.generate_content_async(
             f"{system_message}\n\n{prompt}",
-            generation_config=genai.types.GenerationConfig(temperature=0.3, max_output_tokens=4096)
+            generation_config=genai.types.GenerationConfig(temperature=0.3, max_output_tokens=4096),
+            safety_settings=self.safety_settings
         )
         
         result = self._clean_json(response.text)

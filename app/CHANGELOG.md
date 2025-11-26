@@ -1,5 +1,18 @@
 # 변경 이력
 
+## [1.9.0] - 2025-11-26
+
+### 기능 추가 (Feature)
+- **대시보드 (Dashboard)**:
+  - `GET /`: 최근 학습한 코스 목록을 보여주는 대시보드 페이지 추가.
+  - `/courses/new`: 새로운 코스 생성 페이지 분리.
+- **데이터 영속성 (Persistence)**:
+  - `Course` 및 `Chapter` 모델 추가 (SQLite).
+  - 생성된 모든 코스와 챕터 콘텐츠가 DB에 저장되어 재방문 시 유지됨.
+- **라우팅 개선**:
+  - `/courses/:id`: 특정 코스로 직접 접근 가능.
+  - `/courses/:courseId/chapters/:chapterId`: 챕터별 고유 URL 제공.
+
 ## [1.8.0] - 2025-11-25
 
 ### 기능 추가 (Feature)

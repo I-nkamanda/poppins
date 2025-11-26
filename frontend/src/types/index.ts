@@ -6,6 +6,9 @@ export interface Chapter {
 
 export interface Course {
     id: number;
+    topic?: string;
+    description?: string;
+    level?: string;
     chapters: Chapter[];
 }
 
@@ -44,7 +47,8 @@ export interface StudyMaterialResponse {
 export interface GenerateRequest {
     topic: string;
     difficulty: string;
-    max_chapters: number;
+    chapter_count?: number;
+    max_chapters?: number; // Keeping for backward compatibility if needed
     course_description?: string;
     selected_objective?: string;
     language?: string;
@@ -90,4 +94,15 @@ export interface QuizGradingResponse {
     feedback: string;
     correct_points: string[];
     improvements: string[];
+}
+
+export interface CourseListItem {
+    id: number;
+    topic: string;
+    description: string;
+    level: string;
+    created_at: string;
+    chapter_count: number;
+    completed_chapters: number;
+    progress: number;
 }

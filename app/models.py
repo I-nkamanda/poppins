@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 
@@ -31,3 +32,35 @@ class UserFeedback(Base):
     rating = Column(Integer)  # 1-5
     comment = Column(Text, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class Course(Base):
+    __tablename__ = "courses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    topic = Column(String, index=True)
+    description = Column(Text)
+    level = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    chapters = relationship("Chapter", back_populates="course")
+
+class Chapter(Base):
+    __tablename__ = "chapters"
+
+    id = Column(Integer, primary_key=True, index=True)
+    course_id = Column(Integer, ForeignKey("courses.id"))
+    title = Column(String)
+    description = Column(Text)
+    content = Column(Text, nullable=True)  # JSON string of generated content (concept, exercise, quiz)
+    is_completed = Column(Integer, default=0)  # 0: False, 1: True (SQLite doesn't have native Boolean)
+
+    course = relationship("Course", back_populates="chapters")
+
+class UserPreference(Base):
+    __tablename__ = "user_preferences"
+
+    id = Column(Integer, primary_key=True, index=True)
+    learning_goal = Column(String)
+    learning_style = Column(String)
+    desired_depth = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)

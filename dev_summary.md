@@ -38,6 +38,30 @@
 
 ---
 
+## [v1.9.0] - 2025-11-26 대시보드 및 영속성 (Dashboard & Persistence)
+
+### 주요 변경 사항
+
+1. **대시보드 UI 구현**
+   - `DashboardPage.tsx`: 최근 학습한 코스 목록을 카드 형태로 표시
+   - "새로운 교육과정 생성" 버튼을 통해 `/courses/new`로 이동
+   - 빈 상태(Empty State) 디자인 적용
+
+2. **데이터 영속성 확보**
+   - `Course`, `Chapter` 테이블 추가 (SQLite)
+   - `POST /generate-course`: 생성된 코스 정보를 DB에 저장하고 ID 반환
+   - `POST /generate-chapter-content`: 생성된 콘텐츠를 해당 챕터 레코드에 업데이트
+   - `GET /courses`: 저장된 코스 목록 조회 API
+   - `GET /courses/{id}`: 특정 코스 상세 조회 API
+
+3. **라우팅 구조 개편**
+   - `/`: 대시보드 (Dashboard)
+   - `/courses/new`: 코스 생성 (Home)
+   - `/courses/:id`: 코스 상세 (Result)
+   - `/courses/:courseId/chapters/:chapterId`: 챕터 학습 (Chapter)
+
+---
+
 ## [v1.8.0] - 2025-11-25 적응형 학습 시스템 (Adaptive Learning)
 
 ### 주요 변경 사항

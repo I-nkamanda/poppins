@@ -1,19 +1,54 @@
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate, Link, useParams } from 'react-router-dom';
 import type { CourseResponse } from '../types';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { getCourse } from '../services/api';
 
 export default function ResultPage() {
+    const { courseId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
 
-    const data = location.state?.data as CourseResponse | undefined;
-    const requestInfo = location.state?.requestInfo;
+    const [data, setData] = useState<CourseResponse | undefined>(location.state?.data);
+    const [requestInfo, setRequestInfo] = useState<any>(location.state?.requestInfo);
+    const [isLoading, setIsLoading] = useState(!location.state?.data);
 
     useEffect(() => {
-        if (!data) {
+        if (data) {
+            setIsLoading(false);
+            return;
+        }
+
+        if (courseId) {
+            const fetchCourse = async () => {
+                try {
+                    const response = await getCourse(parseInt(courseId));
+                    setData(response);
+                    // Reconstruct requestInfo from course data for compatibility
+                    setRequestInfo({
+                        topic: response.course.topic || "Unknown Topic",
+                        difficulty: response.course.level || "중급",
+                        // Add other fields if necessary
+                    });
+                } catch (err) {
+                    console.error('Failed to fetch course:', err);
+                    navigate('/');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            fetchCourse();
+        } else {
             navigate('/');
         }
-    }, [data, navigate]);
+    }, [courseId, data, navigate]);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
 
     if (!data) return null;
 
@@ -41,7 +76,7 @@ export default function ResultPage() {
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                     <div className="p-6 border-b border-gray-200 bg-indigo-50">
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                            {requestInfo?.topic} 마스터하기
+                            {requestInfo?.topic || course.topic} 마스터하기
                         </h2>
                         <p className="text-gray-600">
                             총 {course.chapters.length}개의 챕터로 구성된 맞춤형 학습 과정입니다.
@@ -52,7 +87,7 @@ export default function ResultPage() {
                         {course.chapters.map((chapter, index) => (
                             <li key={chapter.chapterId} className="hover:bg-gray-50 transition-colors">
                                 <Link
-                                    to={`/chapter/${chapter.chapterId}`}
+                                    to={`/courses/${course.id}/chapters/${chapter.chapterId}`}
                                     state={{ course, requestInfo }} // Pass context for lazy loading
                                     className="block p-6"
                                 >
