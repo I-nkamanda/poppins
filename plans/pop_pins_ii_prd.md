@@ -2,10 +2,10 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Product Requirement Document  
-**버전**: 1.9.0  
+**버전**: 2.1.0  
 **작성일**: 2025-11-22  
 **작성자**: 이진걸  
-**최종 업데이트**: 2025-11-26
+**최종 업데이트**: 2025-11-28
 
 ---
 
@@ -54,7 +54,10 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 6. **챕터 다운로드** (Chapter Download) - ✅ 완료
 7. **캐싱 시스템** (In-Memory Caching) - ✅ 완료
 8. **적응형 학습** (Learning Objectives & Feedback) - ✅ 완료
-9. **회원가입** (User Registration) - ⏳ 계획
+9. **객관식 퀴즈** (Multiple Choice Quiz) - ✅ 완료
+10. **고급 학습** (Advanced Learning) - ✅ 완료
+11. **Standalone 앱** (Tauri Desktop App) - ✅ 완료
+12. **회원가입** (User Registration) - ⏳ 계획
 
 ### 멘토링 피드백 반영 (2025-11-17 ~ 11-19)
 
@@ -573,6 +576,9 @@ JSON 응답 반환
 7. Frontend 웹 앱
 8. 적응형 학습 (목표 선택, 피드백)
 9. 학습 히스토리 (SQLite)
+10. 객관식 퀴즈 (MCQ)
+11. 고급 학습 (주관식 AI 채점)
+12. Standalone 데스크탑 앱 (Tauri)
 
 ### 🔄 In Progress (진행 중)
 
@@ -627,8 +633,8 @@ curl -X POST "http://localhost:8001/generate-study-material" \
 
 ---
 
-**문서 버전**: 1.5.0  
-**최종 수정일**: 2025-11-25  
+**문서 버전**: 2.1.0  
+**최종 수정일**: 2025-11-28  
 **승인자**: 이진걸  
-**상태**: MVP 개발 완료 (Backend + Frontend)  
-**다음 마일스톤**: 시연 및 발표 준비
+**상태**: 프로토타입 완료 (Web + Standalone)  
+**다음 마일스톤**: 사용자 피드백 수집 및 개선

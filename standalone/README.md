@@ -1,108 +1,135 @@
-# PopPins II - Standalone Desktop App
+# PopPins II - Tauri Standalone Desktop App
 
-**데스크탑 애플리케이션 버전 (PyWebview + FastAPI)**
+**완전 독립형 데스크탑 애플리케이션** (5-10MB)
+
+# PopPins II - Tauri Standalone Desktop App
+
+**완전 독립형 데스크탑 애플리케이션** (5-10MB)
 
 ## 🎯 개요
 
-이 폴더는 PopPins II를 독립 실행 가능한 데스크탑 애플리케이션으로 만들기 위한 프로토타입입니다.
+이 폴더는 PopPins II의 **완전히 독립적인** Tauri 기반 데스크탑 앱입니다.
+- ✅ 이 폴더만 있으면 빌드 가능
+- ✅ 상위 폴더 참조 없음
+- ✅ 모든 의존성 포함
+- ✅ v2.1.0 최신 기능 모두 지원 (객관식 퀴즈, 고급 학습)
 
-- **Frontend**: React (빌드된 정적 파일)
-- **Backend**: FastAPI (백그라운드 서버)
-- **UI Container**: PyWebview (네이티브 앱처럼 보임)
-
-## 🚀 실행 방법
-
-### 1. 의존성 설치
-
-```bash
-# 루트 폴더에서 실행
-pip install -r requirements.txt
-pip install -r standalone/requirements.txt
-```
-
-### 2. Frontend 빌드 (최초 1회)
-
-```bash
-cd frontend
-npm install
-npm run build
-```
-
-빌드 결과물은 `frontend/dist/` 폴더에 생성됩니다.
-
-### 3. Standalone 앱 실행
-
-```bash
-# 프로젝트 루트에서 실행
-cd standalone
-python launcher.py
-```
-
-또는 루트에서 직접:
-
-```bash
-python standalone/launcher.py
-```
-
-## 📦 구조
+## 📁 구조
 
 ```
 standalone/
-├── launcher.py          # 메인 실행 파일
-├── requirements.txt     # 추가 의존성
-└── README.md           # 이 파일
+├── app/                    # 백엔드 (복사됨)
+├── frontend/               # Tauri + React
+│   ├── dist/              # 빌드된 프론트엔드
+│   ├── src-tauri/         # Tauri Rust 코드
+│   └── package.json
+├── vector_db/             # 벡터 DB (복사됨)
+├── .env                   # 환경 변수
+├── .gitattributes         # Git LFS 설정 (*.faiss)
+├── requirements.txt       # Python 의존성
+├── setup.py              # 자동 구성 스크립트
+├── launcher.py           # Python 간편 실행기
+├── README.md             # 이 파일
+├── QUICKSTART.md         # 빠른 시작 가이드
+├── ARCHITECTURE.md       # 아키텍처 상세
+├── DEPLOYMENT.md         # 배포 가이드
+└── DIFFERENCES.md        # Web vs Standalone 비교
 ```
 
-## ✅ 동작 방식
+## 🚀 빌드 방법
 
-1. `launcher.py` 실행
-2. FastAPI 서버가 백그라운드에서 시작 (`http://127.0.0.1:8001`)
-3. 서버 준비 완료 대기
-4. PyWebview 창 열기 (네이티브 앱처럼 보임)
-5. 사용자가 웹 UI 사용 (브라우저 주소창 없음)
+### 준비사항
 
-## 🔧 다음 단계 (배포용 exe 만들기)
+1. **Rust 설치** (최초 1회)
+```bash
+winget install -e --id Rustlang.Rustup
+# 또는 https://rustup.rs/
+```
 
-### PyInstaller 사용
+2. **Node.js 설치** (v18+)
+
+### 빌드 순서
+
+#### 1. 독립형 구성 (최초 1회)
+```bash
+# 프로젝트 루트에서
+cd frontend
+npm run build
+
+# standalone 구성
+cd ../standalone
+python setup.py
+```
+
+#### 2. Tauri 개발 모드
+```bash
+cd standalone/frontend
+npm run tauri dev
+```
+
+#### 3. 프로덕션 빌드
+```bash
+cd standalone/frontend
+npm run tauri build
+```
+
+**결과물**: `src-tauri/target/release/bundle/`
+- Windows: `PopPins II.exe` (~5-10MB)
+- Installer: `PopPins II_0.1.0_x64_en-US.msi`
+
+## 📦 Git LFS
+
+`.faiss` 파일은 Git LFS로 관리됩니다:
 
 ```bash
-pip install pyinstaller
-
-pyinstaller --onefile --windowed \
-  --add-data "frontend/dist:frontend/dist" \
-  --add-data "vector_db:vector_db" \
-  --add-data "app/.env:app" \
-  --hidden-import=uvicorn.logging \
-  --hidden-import=uvicorn.loops.auto \
-  --hidden-import=uvicorn.protocols.http.auto \
-  standalone/launcher.py
+# 이미 설정됨
+git lfs track "*.faiss"
+git add .gitattributes
 ```
 
-결과: `dist/launcher.exe` (단일 실행 파일)
+## ⚙️ 작동 방식
 
-## ⚠️ 주의사항
+1. Tauri 앱 실행 (.exe)
+2. Python FastAPI 서버 자동 시작 (port 8001)
+3. WebView 창에 React UI 로드
+4. 완료!
 
-- `.env` 파일에 `GEMINI_API_KEY`가 설정되어 있어야 합니다
-- `vector_db/` 폴더가 필요합니다 (RAG 기능 사용 시)
-- `history.db` 파일이 실행 위치에 생성됩니다
+## ✨ v2.1.0 최신 기능
 
-## 🐛 문제 해결
+- 객관식 퀴즈 (5문제, 즉각 피드백)
+- 고급 학습 섹션 (주관식 3문제, AI 채점)
+- 개선된 UI/UX
+- 안정성 향상
 
-### "pywebview를 찾을 수 없습니다"
+## 🔧 문제 해결
+
+### "Rust가 설치되지 않음"
 ```bash
-pip install pywebview
+rustc --version
+# 없으면 Rust 설치 필요
 ```
 
-### "서버를 시작할 수 없습니다"
-- 8001 포트가 이미 사용 중인지 확인
-- `.env` 파일이 `app/` 폴더에 있는지 확인
+### "Python 백엔드 시작 실패"
+- Python이 설치되어 있는지 확인
+- `standalone/.env`에 GEMINI_API_KEY 설정 확인
+- `pip install -r requirements.txt` 실행
 
-### 창이 열리지 않음
-- Windows: Edge WebView2 런타임 필요
-- macOS: 기본 제공
-- Linux: `python3-gi python3-gi-cairo gir1.2-gtk-3.0 gir1.2-webkit2-4.0` 설치
+### 빌드 시 에러
+```bash
+# Cargo 캐시 정리
+cd frontend/src-tauri
+cargo clean
+```
+
+## 📚 추가 문서
+
+- [**QUICKSTART.md**](./QUICKSTART.md) - 3분 만에 시작하기
+- [**ARCHITECTURE.md**](./ARCHITECTURE.md) - 아키텍처 상세 설명
+- [**DEPLOYMENT.md**](./DEPLOYMENT.md) - 배포 및 패키징 가이드
+- [**DIFFERENCES.md**](./DIFFERENCES.md) - Web 버전과의 차이점
 
 ## 📝 버전 정보
 
-- **버전**: 1.10.0
-- **최종 업데이트**: 2025-11-27
+- **버전**: v2.1.0
+- **Tauri**: 2.x
+- **최종 업데이트**: 2025-11-28

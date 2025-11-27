@@ -24,18 +24,51 @@
  * );
  * ```
  */
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ResultPage from './pages/ResultPage';
 import ChapterPage from './pages/ChapterPage';
 import ObjectivesPage from './pages/ObjectivesPage';
 import DashboardPage from './pages/DashboardPage';
-
 import { QuizResultsPage } from './pages/QuizResultsPage';
+import { ApiKeyModal } from './components/ApiKeyModal';
+import { checkConfig } from './services/api';
 
 function App() {
+  const [needsConfig, setNeedsConfig] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const status = await checkConfig();
+        if (!status.configured) {
+          setNeedsConfig(true);
+        }
+      } catch (e) {
+        console.error("Failed to check config:", e);
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    // 1초 후 체크 (백엔드 부팅 대기)
+    const timer = setTimeout(check, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
+      {needsConfig && <ApiKeyModal onConfigured={() => setNeedsConfig(false)} />}
       <div className="min-h-screen w-full">
         <Routes>
           {/* 대시보드 - 최근 학습 목록 */}

@@ -349,3 +349,61 @@
 - **Content Truncation**: Addressed an issue where generated JSON was being truncated, ensuring complete content delivery.
 - **Port Mismatch**: Fixed a configuration issue where the frontend was targeting the wrong backend port (8001).
 
+---
+
+## 2025-11-27~28: Standalone Desktop App Development (v2.1.0)
+
+### 1. Tauri Desktop App 구현
+- **완전 독립형 앱**: Tauri 2.x 기반 데스크탑 애플리케이션 개발
+- **구조**:
+  - `standalone/app/`: 백엔드 코드 복사본 (FastAPI)
+  - `standalone/frontend/`: Tauri + React 통합
+  - `standalone/vector_db/`: RAG 벡터 DB 복사본
+  - `standalone/launcher.py`: Python 기반 간단 실행 스크립트
+
+### 2. 핵심 기능
+- **자동 백엔드 시작**: Tauri 앱이 FastAPI 서버를 자동으로 시작
+- **API 키 관리**: 첫 실행 시 사용자로부터 API 키 입력 받기
+- **빌드 가능**: `npm run tauri build`로 실행 파일 생성 (5-10MB)
+- **네이티브 경험**: 브라우저 없이 네이티브 앱처럼 동작
+
+### 3. 설정 파일
+- `standalone/.env`: 환경 변수 설정
+- `standalone/.gitignore`: Git 관리 파일
+- `standalone/setup.py`: 자동 구성 스크립트
+- `standalone/requirements.txt`: Python 의존성
+
+### 4. 문서화
+- `standalone/README.md`: 전체 가이드
+- `standalone/QUICKSTART.md`: 빠른 시작 가이드
+
+### 5. Git LFS 통합
+- `.faiss` 파일을 Git LFS로 관리하여 대용량 벡터 DB 저장
+- `.gitattributes` 설정으로 자동 추적
+
+### 6. 향후 계획
+- Windows Installer (.msi) 생성
+- macOS 앱 번들 (.app) 생성
+- 자동 업데이트 기능 추가
+- 오프라인 모드 지원
+
+---
+
+## 2025-11-28: Documentation Comprehensive Update (v2.1.0)
+
+### 1. 문서 업데이트 범위
+- **Root 문서들**: README.md, dev_summary.md, manual.md
+- **Standalone 문서들**: README.md, QUICKSTART.md + 3개 신규 문서
+- **Plans 문서들**: planning_document.md, prd.md
+
+### 2. 새로운 Standalone 문서
+- `ARCHITECTURE.md`: Tauri 앱 아키텍처 상세 설명
+- `DEPLOYMENT.md`: 빌드 및 배포 가이드
+- `DIFFERENCES.md`: Web vs Standalone 비교
+
+### 3. 버전 정보 통합
+- 모든 문서의 버전을 v2.1.0으로 통일
+- 최종 업데이트 날짜를 2025-11-28로 업데이트
+- 변경 이력 일관성 확보
+
+

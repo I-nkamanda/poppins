@@ -229,3 +229,25 @@ export const getQuizResults = async (skip: number = 0, limit: number = 50): Prom
     });
     return response.data;
 };
+
+/**
+ * API 키 설정 상태를 확인합니다.
+ */
+export const checkConfig = async (): Promise<{ configured: boolean; rag_enabled: boolean }> => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/config/check`);
+        return response.data;
+    } catch (error) {
+        // 엔드포인트가 없으면(구버전 백엔드) 설정된 것으로 간주
+        console.warn("Config check failed, assuming configured:", error);
+        return { configured: true, rag_enabled: false };
+    }
+};
+
+/**
+ * API 키를 설정합니다.
+ */
+export const setApiKey = async (apiKey: string): Promise<{ status: string; message: string }> => {
+    const response = await axios.post(`${API_BASE_URL}/api/config/key`, { api_key: apiKey });
+    return response.data;
+};

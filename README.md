@@ -4,7 +4,7 @@
 - **AI 모델**: Gemini 2.5 Flash / Gemini 2.0 Flash Exp
 - **벡터 DB**: FAISS with Semantic Chunking (LangChain)
 
-## ✨ 최신 개선 사항 (v2.0.0)
+## ✨ 최신 개선 사항 (v2.1.0)
 
 - 🔄 **RAG 기본화**: RAG 기능이 기본으로 활성화되며, `main.py`가 RAG 버전을 담당합니다.
 - 🐛 **안정성 개선**: 콘텐츠 잘림 현상 수정 및 포트 연결 안정화 (8001 포트)
@@ -13,6 +13,9 @@
 - 🔗 **고유 URL**: 코스 및 챕터별 고유 주소로 직접 접근 지원
 - 🔧 **마크다운 코드 블록 보존**: 생성된 콘텐츠의 코드 블록이 올바르게 렌더링됩니다
 - 📥 **다운로드 기능 개선**: 파일명 정규화 및 크로스 브라우저 호환성 향상
+- ❓ **객관식 퀴즈**: 각 챕터에 5개의 객관식 문제와 즉각적인 피드백 제공
+- 🎓 **고급 학습**: 주관식 문제 3개를 별도 섹션으로 분리, AI 채점 기능 유지
+- 💻 **Standalone 앱**: Tauri 기반 데스크탑 앱으로 독립 실행 가능
 
 ## 🚀 Quick Start
 
@@ -84,7 +87,7 @@ npm run dev
 ```
 Pop-pins2/
 ├── app/                    # Backend (FastAPI)
-│   ├── services/          # [NEW] 비즈니스 로직 모듈
+│   ├── services/          # 비즈니스 로직 모듈
 │   │   └── generator.py   # 콘텐츠 생성 로직 (Gemini + RAG)
 │   ├── main.py            # 메인 앱 (RAG 통합 버전)
 │   ├── requirements.txt
@@ -95,6 +98,11 @@ Pop-pins2/
 │   │   ├── components/    # 재사용 컴포넌트
 │   │   └── services/       # API 서비스
 │   └── package.json
+├── standalone/            # [NEW] Tauri 데스크탑 앱
+│   ├── app/               # 백엔드 (복사본)
+│   ├── frontend/          # Tauri + React
+│   ├── vector_db/         # 벡터 DB (복사본)
+│   └── README.md          # Standalone 가이드
 ├── RAG vector generator/  # RAG 벡터 DB 생성 도구
 │   ├── python_textbook_rag_generator.py
 │   ├── pdfs/              # PDF 파일 저장소
@@ -112,6 +120,7 @@ Pop-pins2/
 - 🔄 **변경 이력**: [`app/CHANGELOG.md`](./app/CHANGELOG.md) - 버전별 변경 사항
 - 🔌 **API 문서**: [`app/API_REFERENCE.md`](./app/API_REFERENCE.md) - API 엔드포인트 상세
 - 🔍 **RAG 가이드**: [`app/RAG_INTEGRATION_GUIDE.md`](./app/RAG_INTEGRATION_GUIDE.md) - RAG 설정 및 사용법
+- 💻 **Standalone 앱**: [`standalone/README.md`](./standalone/README.md) - 데스크탑 앱 가이드
 
 ## 🎯 주요 API 엔드포인트
 
@@ -148,4 +157,4 @@ Pop-pins2/
 
 ---
 
-**버전**: v2.0.0 | **최종 업데이트**: 2025-11-27
+**버전**: v2.1.0 | **최종 업데이트**: 2025-11-28
