@@ -7,8 +7,10 @@
 ## Base URL
 
 ```
-http://localhost:8000
+http://localhost:8001
 ```
+
+**참고**: 포트는 환경 변수 `PORT`로 설정할 수 있으며, 기본값은 8001입니다.
 
 ## 인증
 

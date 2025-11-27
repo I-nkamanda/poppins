@@ -41,7 +41,8 @@ def test_clean_json_invalid(generator):
 @pytest.mark.asyncio
 async def test_generate_course_success(generator, mock_genai):
     """커리큘럼 생성 성공 테스트"""
-    # Mock response setup
+    # Mock response setup - generate_course uses generate_content_async
+    from unittest.mock import AsyncMock
     mock_response = Mock()
     mock_response.text = json.dumps({
         "course": {
@@ -51,7 +52,7 @@ async def test_generate_course_success(generator, mock_genai):
             ]
         }
     })
-    generator.model.generate_content.return_value = mock_response
+    generator.model.generate_content_async = AsyncMock(return_value=mock_response)
 
     # Call method
     result = await generator.generate_course(
@@ -67,7 +68,7 @@ async def test_generate_course_success(generator, mock_genai):
     assert result["course"]["chapters"][0]["chapterTitle"] == "Test Chapter"
     
     # Verify API call
-    generator.model.generate_content.assert_called_once()
+    generator.model.generate_content_async.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_generate_learning_objectives_retry_logic(generator):

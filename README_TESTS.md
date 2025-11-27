@@ -25,7 +25,7 @@ pytest tests/test_json_parsing.py
 pytest tests/test_json_parsing.py::TestCleanJsonResponse::test_clean_json_basic
 
 # 커버리지 포함
-pytest --cov=app/main_with_RAG --cov-report=html
+pytest --cov=app/main --cov-report=html
 ```
 
 ### 3. 테스트 구조
@@ -44,7 +44,7 @@ tests/
 
 ```python
 import pytest
-from main_with_RAG import clean_json_response
+from main import clean_json_response
 
 def test_clean_json_basic():
     """기본 JSON 파싱 테스트"""
@@ -68,4 +68,5 @@ def test_health_check(client):
 - 실제 Gemini API를 호출하는 테스트는 모킹을 사용하세요
 - 환경 변수는 `conftest.py`에서 모킹됩니다
 - RAG 기능은 기본적으로 비활성화됩니다 (`USE_RAG=false`)
+
 

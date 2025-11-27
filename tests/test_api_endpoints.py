@@ -20,6 +20,31 @@ def test_generate_objectives(client, mock_content_generator):
 
 def test_generate_course(client, mock_content_generator):
     """커리큘럼 생성 엔드포인트 테스트"""
+    from main import app, get_db
+    from unittest.mock import MagicMock
+    
+    # Mock DB Session
+    mock_db = MagicMock()
+    
+    # Create a mock course object that will be returned
+    mock_course_instance = MagicMock()
+    mock_course_instance.id = 1
+    
+    # When DBCourse is instantiated and added, make refresh set the id
+    def mock_refresh(obj):
+        if hasattr(obj, 'id'):
+            obj.id = 1
+    
+    mock_db.add = MagicMock()
+    mock_db.commit = MagicMock()
+    mock_db.refresh = MagicMock(side_effect=mock_refresh)
+    
+    # Override dependency
+    def override_get_db():
+        yield mock_db
+        
+    app.dependency_overrides[get_db] = override_get_db
+    
     # Mock setup
     mock_content_generator.generate_course.return_value = {
         "course": {
@@ -29,13 +54,18 @@ def test_generate_course(client, mock_content_generator):
             ]
         }
     }
-
-    response = client.post("/generate-course", json={"topic": "Python"})
     
-    assert response.status_code == 200
-    data = response.json()
-    assert data["course"]["id"] == 1
-    assert len(data["course"]["chapters"]) == 1
+    try:
+        response = client.post("/generate-course", json={"topic": "Python"})
+        
+        assert response.status_code == 200
+        data = response.json()
+        # ID will be from DB (mocked to 1), so check it
+        assert data["course"]["id"] == 1
+        assert len(data["course"]["chapters"]) == 1
+    finally:
+        # Clean up override
+        app.dependency_overrides = {}
 
 def test_generate_chapter_content(client, mock_content_generator):
     """챕터 콘텐츠 생성 엔드포인트 테스트"""

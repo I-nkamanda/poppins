@@ -57,7 +57,7 @@ The following changes have been implemented and deployed:
    - Generation time: ~4 hours (2025-11-24)
 
 2. **Application Updated**:
-   - `main_with_RAG.py` now uses semantic vector DB by default
+   - `main.py` now uses semantic vector DB by default
    - Backward compatible with environment variable override
 
 3. **Documentation Updated**:

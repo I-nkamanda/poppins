@@ -166,25 +166,11 @@ PopPins II는 **AI 기반 PBL (Problem-Based Learning) 생성 플랫폼**입니�
 - Course ID 생성
 - 챕터 리스트
 
-**구현 상태**: ✅ 완료 (`main_with_RAG.py` - `generate_course()`)
+**구현 상태**: ✅ 완료 (`main.py` - `generate_course()`)
 
 #### FR-2: RAG 기반 콘텐츠 검색 ✅
 
 **설명**: PDF 문서를 벡터 DB에 저장하고, 관련 콘텐츠 검색
-
-**구성**:
-1. **PDF Loader**: PyPDFLoader로 PDF 텍스트 추출
-2. **Chunking**: RecursiveCharacterTextSplitter (chunk_size=1000, overlap=200)
-3. **Embedding**: GoogleGenerativeAIEmbeddings (text-embedding-004)
-4. **Vector Store**: FAISS 벡터 DB
-5. **Retriever**: Similarity Search (k=3)
-
-**구현 상태**: ✅ 완료 (`main_with_RAG.py` - `search_rag_context()`)
-
-#### FR-3: AI 기반 PBL 생성 ✅
-
-**설명**: 4가지 AI 생성기로 학습 자료 생성
-
 **3.1 CourseMaker** ✅
 - **입력**: topic, difficulty, max_chapters, selected_objective
 - **출력**: Course (id + chapters)

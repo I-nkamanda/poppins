@@ -31,7 +31,7 @@ API 키는 [Google AI Studio](https://makersuite.google.com/app/apikey)에서 �
 
 ### 3. 서버 실행
 
-#### 기본 버전 (RAG 없음)
+#### RAG 통합 버전 (교재 PDF 참고) - 기본
 
 ```bash
 python app/main.py
@@ -43,38 +43,38 @@ python app/main.py
 uvicorn app.main:app --reload
 ```
 
-#### RAG 통합 버전 (교재 PDF 참고)
+#### 레거시 버전 (RAG 없음)
 
 ```bash
-python app/main_with_RAG.py
+python "app/main(no RAG).py"
 ```
 
 또는:
 
 ```bash
-uvicorn app.main_with_RAG:app --reload
+uvicorn "app.main(no RAG):app" --reload
 ```
 
 RAG 버전 사용 시 추가 설정이 필요합니다. 자세한 내용은 [RAG_INTEGRATION_GUIDE.md](./RAG_INTEGRATION_GUIDE.md)를 참고하세요.
 
 ### 4. API 테스트
 
-서버가 실행되면 `http://localhost:8000`에서 API를 사용할 수 있습니다.
+서버가 실행되면 `http://localhost:8001`에서 API를 사용할 수 있습니다.
 
 ```bash
 # API 문서 확인
-# 브라우저에서 http://localhost:8000/docs 접속
+# 브라우저에서 http://localhost:8001/docs 접속
 
 # Health check
-curl http://localhost:8000/health
+curl http://localhost:8001/health
 ```
 
 ## 📁 파일 구조
 
 ```
 app/
-├── main.py                    # 원본 버전 (RAG 없음)
-├── main_with_RAG.py          # RAG 통합 버전
+├── main.py                    # RAG 통합 버전 (메인)
+├── main(no RAG).py           # 레거시 버전 (RAG 없음)
 ├── requirements.txt           # 패키지 의존성
 ├── README.md                  # 이 파일
 └── RAG_INTEGRATION_GUIDE.md  # RAG 통합 가이드
@@ -156,19 +156,19 @@ API 정보를 반환합니다.
 
 ## 🔄 두 가지 버전 비교
 
-### main.py (원본)
-
-- RAG 기능 없음
-- Gemini 2.5만 사용하여 생성
-- 빠른 응답 속도
-- 일반적인 학습 자료 생성
-
-### main_with_RAG.py (RAG 통합)
+### main.py (RAG 통합 - 메인)
 
 - 파이썬 교재 PDF를 벡터 DB로 저장
 - 생성 시 관련 교재 내용을 참고
 - 더 정확하고 교재 기반의 학습 자료 생성
 - 벡터 DB 설정 필요
+
+### main(no RAG).py (레거시)
+
+- RAG 기능 없음
+- Gemini 2.5만 사용하여 생성
+- 빠른 응답 속도
+- 일반적인 학습 자료 생성
 
 ## 📦 의존성
 

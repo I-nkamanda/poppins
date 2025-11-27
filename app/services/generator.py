@@ -1,3 +1,25 @@
+"""
+PopPins II - AI 콘텐츠 생성 서비스
+
+이 모듈은 Google Gemini API를 사용하여 교육 콘텐츠를 생성하는 핵심 서비스입니다.
+
+주요 기능:
+- 학습 목표 생성: 주제에 대한 3가지 학습 경로 제안
+- 커리큘럼 생성: 코스의 챕터 구조 생성
+- 개념 설명 생성: 상세한 개념 학습 자료 생성
+- 실습 과제 생성: 실전 연습 문제 생성
+- 퀴즈 생성: 주관식 서술형 문제 생성
+- 퀴즈 채점: 사용자 답안 평가 및 피드백 제공
+- RAG (Retrieval-Augmented Generation): 벡터 DB를 활용한 참고 자료 검색
+
+기술 스택:
+- Google Gemini API (gemini-2.5-flash)
+- LangChain + FAISS (RAG 벡터 검색)
+- SQLAlchemy (생성 이력 저장)
+
+작성자: PopPins II 개발팀
+버전: 1.0.0
+"""
 import os
 import json
 import re
@@ -8,14 +30,14 @@ import google.generativeai as genai
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timezone
 
 # DB imports
 from sqlalchemy.orm import Session
 from app.models import GenerationLog, QuizResult, UserFeedback
 from app.database import SessionLocal
 
-# RAG imports
+# RAG imports (선택적 의존성)
 try:
     from langchain_community.vectorstores import FAISS
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
@@ -36,14 +58,50 @@ load_dotenv()
 logger = logging.getLogger("pop_pins_api")
 
 class ContentGenerator:
+    """
+    AI 기반 교육 콘텐츠 생성기
+    
+    Google Gemini API를 사용하여 다양한 교육 콘텐츠를 생성합니다.
+    RAG(Retrieval-Augmented Generation)를 통해 참고 자료를 활용한 고품질 콘텐츠 생성이 가능합니다.
+    
+    주요 기능:
+    - 학습 목표 제안
+    - 커리큘럼 생성
+    - 개념/실습/퀴즈 콘텐츠 생성
+    - 퀴즈 채점 및 피드백
+    
+    Attributes:
+        model: Google Gemini GenerativeModel 인스턴스
+        vector_store: FAISS 벡터 스토어 (RAG용, 선택적)
+        model_name (str): 사용할 Gemini 모델 이름
+        safety_settings (list): Gemini API 안전 설정
+            모든 카테고리를 BLOCK_NONE으로 설정하여 콘텐츠 생성이 차단되지 않도록 함
+    
+    Example:
+        generator = ContentGenerator()
+        objectives = await generator.generate_learning_objectives("파이썬 리스트")
+    """
     def __init__(self):
+        """
+        ContentGenerator 초기화
+        
+        Gemini API 설정 및 RAG 벡터 스토어 로드를 수행합니다.
+        
+        Raises:
+            ValueError: GEMINI_API_KEY 환경 변수가 설정되지 않은 경우
+        
+        Note:
+            - RAG는 선택적 기능이므로 로드 실패해도 계속 진행됩니다
+            - 환경 변수 USE_RAG=false로 설정하면 RAG 비활성화
+        """
         self.model = None
         self.vector_store = None
         self.model_name = "gemini-2.5-flash"
-        self.setup_gemini()
-        self.setup_rag()
+        self.setup_gemini()  # Gemini API 설정
+        self.setup_rag()  # RAG 벡터 스토어 로드 (선택적)
         
-        # Safety settings to prevent finish_reason: 2 (BLOCK_NONE)
+        # Safety settings: 콘텐츠 생성이 안전 필터에 의해 차단되지 않도록 설정
+        # finish_reason: 2 (SAFETY) 오류 방지
         self.safety_settings = [
             {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
             {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -52,15 +110,58 @@ class ContentGenerator:
         ]
 
     def setup_gemini(self):
+        """
+        Google Gemini API 설정
+        
+        환경 변수에서 API 키를 읽어 Gemini 모델을 초기화합니다.
+        
+        Raises:
+            ValueError: GEMINI_API_KEY가 설정되지 않았거나 기본값인 경우
+        
+        Note:
+            API 키는 .env 파일에 GEMINI_API_KEY=your_actual_key 형식으로 저장해야 합니다
+        """
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key or api_key == "your_api_key_here":
-            logger.error("GEMINI_API_KEY not set")
-            raise ValueError("GEMINI_API_KEY environment variable is not set.")
+            error_msg = "GEMINI_API_KEY environment variable is not set or is set to default value"
+            logger.error(error_msg)
+            logger.error("Please set GEMINI_API_KEY in your .env file")
+            raise ValueError(error_msg)
         
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel(self.model_name)
+        # API 키 형식 기본 검증 (최소 길이 체크)
+        if len(api_key.strip()) < 20:
+            error_msg = "GEMINI_API_KEY appears to be invalid (too short)"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
+        try:
+            # Gemini API 설정
+            genai.configure(api_key=api_key)
+            # GenerativeModel 인스턴스 생성 (비동기 호출 지원)
+            self.model = genai.GenerativeModel(self.model_name)
+            logger.info(f"Gemini API configured successfully with model: {self.model_name}")
+        except Exception as e:
+            error_msg = f"Failed to configure Gemini API: {e}"
+            logger.error(error_msg)
+            raise ValueError(error_msg)
 
     def setup_rag(self):
+        """
+        RAG (Retrieval-Augmented Generation) 벡터 스토어 설정
+        
+        사전에 구축된 벡터 데이터베이스를 로드하여 참고 자료 검색 기능을 활성화합니다.
+        RAG를 통해 생성되는 콘텐츠의 정확성과 품질이 향상됩니다.
+        
+        환경 변수:
+            USE_RAG: RAG 사용 여부 (true/false), 기본값 "true"
+            VECTOR_DB_PATH: 벡터 DB 경로, 기본값 "../python_textbook_gemini_db_semantic"
+            VECTOR_DB_EMBEDDING_MODEL: 임베딩 모델 (gemini/openai), 기본값 "gemini"
+        
+        Note:
+            - RAG는 선택적 기능이므로 로드 실패해도 서비스는 계속 작동합니다
+            - 벡터 DB가 없으면 RAG 없이 일반 생성 모드로 동작합니다
+            - allow_dangerous_deserialization=True: 신뢰할 수 있는 소스의 벡터 DB만 로드해야 함
+        """
         use_rag = os.getenv("USE_RAG", "true").lower() == "true"
         if not use_rag or not RAG_AVAILABLE:
             self.vector_store = None
@@ -75,6 +176,7 @@ class ContentGenerator:
                 logger.warning(f"Vector DB not found at {db_path}")
                 return
 
+            # 임베딩 모델 선택 (Gemini 또는 OpenAI)
             if embedding_model == "gemini":
                 api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
                 embeddings = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004", google_api_key=api_key)
@@ -85,14 +187,31 @@ class ContentGenerator:
                 logger.warning(f"Unsupported or missing embedding model: {embedding_model}")
                 return
 
+            # FAISS 벡터 스토어 로드
             self.vector_store = FAISS.load_local(str(db_path), embeddings, allow_dangerous_deserialization=True)
             logger.info(f"RAG Vector DB loaded from {db_path}")
         except Exception as e:
             logger.error(f"Failed to load Vector DB: {e}")
-            self.vector_store = None
+            self.vector_store = None  # RAG 없이 계속 진행
 
     def _log_to_db(self, request_type: str, topic: str, prompt_context: str, generated_content: str, latency_ms: int):
-        """Logs the generation event to the database."""
+        """
+        생성 이벤트를 데이터베이스에 기록합니다.
+        
+        모든 AI 콘텐츠 생성 요청을 로그로 저장하여 디버깅, 성능 분석, 사용 패턴 분석에 활용합니다.
+        
+        Args:
+            request_type (str): 요청 타입
+                가능한 값: "course", "concept", "exercise", "quiz", "objectives", "grading"
+            topic (str): 주제/토픽
+            prompt_context (str): 사용된 프롬프트/컨텍스트 (JSON 문자열)
+            generated_content (str): 생성된 콘텐츠 (JSON 문자열)
+            latency_ms (int): 생성 소요 시간 (밀리초)
+        
+        Note:
+            - 로그 저장 실패해도 콘텐츠 생성은 계속 진행됩니다 (에러만 로깅)
+            - 각 요청마다 새로운 DB 세션을 생성하여 사용
+        """
         try:
             db = SessionLocal()
             log_entry = GenerationLog(
@@ -102,7 +221,7 @@ class ContentGenerator:
                 generated_content=generated_content,
                 model_name=self.model_name,
                 latency_ms=latency_ms,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.now(timezone.utc)
             )
             db.add(log_entry)
             db.commit()
@@ -111,24 +230,48 @@ class ContentGenerator:
             logger.error(f"Failed to log to DB: {e}")
 
     async def search_context(self, query: str, k: int = 3) -> str:
+        """
+        RAG를 사용하여 관련 참고 자료를 검색합니다.
+        
+        벡터 유사도 검색을 통해 쿼리와 관련된 문서를 찾아 반환합니다.
+        검색된 자료는 프롬프트에 포함되어 더 정확하고 품질 높은 콘텐츠 생성에 활용됩니다.
+        
+        Args:
+            query (str): 검색 쿼리
+                예: "파이썬 리스트 커리큘럼", "리스트 기초 개념 설명"
+            k (int): 반환할 문서 수, 기본값 3
+                상위 k개의 유사한 문서를 반환
+        
+        Returns:
+            str: 검색된 참고 자료를 포맷팅한 문자열
+                형식: "[참고 자료 1 - 출처: 파일명]\n내용...\n\n[참고 자료 2 - ...]"
+                검색 결과가 없거나 RAG가 비활성화된 경우 빈 문자열 반환
+        
+        Note:
+            - FAISS는 동기 함수이므로 thread pool에서 실행하여 비동기로 처리
+            - 검색 실패 시 빈 문자열 반환 (콘텐츠 생성은 계속 진행)
+            - 각 문서의 내용은 500자로 제한하여 프롬프트 길이 관리
+        """
         if not self.vector_store:
-            return ""
+            return ""  # RAG가 비활성화된 경우
         try:
             loop = asyncio.get_running_loop()
-            # Run synchronous FAISS search in a thread pool
+            # 동기 FAISS 검색을 thread pool에서 실행하여 비동기 처리
             docs = await loop.run_in_executor(None, lambda: self.vector_store.similarity_search(query, k=k))
             
-            if not docs: return ""
+            if not docs: 
+                return ""  # 검색 결과 없음
             
+            # 검색 결과를 프롬프트에 포함할 수 있는 형식으로 포맷팅
             context_parts = []
             for i, doc in enumerate(docs, 1):
-                source = doc.metadata.get("file_name", "Unknown")
-                content = doc.page_content[:500]
+                source = doc.metadata.get("file_name", "Unknown")  # 출처 파일명
+                content = doc.page_content[:500]  # 내용은 500자로 제한
                 context_parts.append(f"[참고 자료 {i} - 출처: {source}]\n{content}")
             return "\n\n".join(context_parts)
         except Exception as e:
             logger.error(f"RAG search failed: {e}")
-            return ""
+            return ""  # 검색 실패해도 계속 진행
 
     def _clean_json(self, raw: str) -> dict:
         cleaned = raw.replace("```json", "").replace("```", "").strip()
@@ -144,6 +287,25 @@ class ContentGenerator:
                     pass
             raise ValueError(f"Failed to parse JSON: {cleaned[:100]}...")
 
+            return {"title": title, "description": description, "contents": contents}
+
+    def _repair_json(self, json_str: str) -> dict:
+        """Attempt to repair truncated JSON."""
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            # Try closing quotes and braces
+            try:
+                return json.loads(json_str + '"}')
+            except:
+                try:
+                    return json.loads(json_str + '"]}')
+                except:
+                    try:
+                        return json.loads(json_str + '}')
+                    except:
+                        return None
+
     def _extract_content(self, raw: str) -> dict:
         """Extract content from Gemini response, handling both JSON and partial responses."""
         cleaned = raw.replace("```json", "").replace("```", "").strip()
@@ -157,6 +319,15 @@ class ContentGenerator:
                 "contents": parsed.get("contents", "")
             }
         except json.JSONDecodeError:
+            # Attempt to repair if truncated
+            repaired = self._repair_json(cleaned)
+            if repaired:
+                 return {
+                    "title": repaired.get("title", ""),
+                    "description": repaired.get("description", ""),
+                    "contents": repaired.get("contents", "")
+                }
+
             # Fallback: Try to extract JSON object
             try:
                 match = re.search(r'\{.*\}', cleaned, re.DOTALL)
@@ -203,40 +374,67 @@ class ContentGenerator:
             return {"title": title, "description": description, "contents": contents}
 
     def get_learning_context(self, course_title: str) -> str:
-        """Fetches recent quiz results and feedback for the course to build a learning context."""
+        """
+        최근 퀴즈 결과와 피드백을 조회하여 학습 컨텍스트를 생성합니다.
+        
+        Args:
+            course_title: 코스 제목 (현재는 사용하지 않지만 향후 필터링에 활용 가능)
+        
+        Returns:
+            str: 학습 컨텍스트 문자열 (최근 성적, 약점, 피드백 포함)
+        
+        변경 이유:
+            - 변수명 개선: q → quiz_result, f → feedback
+            - 주석 정리 및 명확화
+            - 에러 처리 개선
+        """
         try:
             db = SessionLocal()
-            # Get recent 3 quiz results for this course (assuming course_title is unique enough for now)
-            # In a real app, we would filter by user_id and course_id
-            # Here we filter by chapter_title that might contain the course topic or we rely on the fact that we store chapter_title
-            # Wait, our models only have chapter_title. We need to be careful.
-            # Ideally we should store course_title in QuizResult.
-            # For now, let's fetch ALL recent results and filter or just fetch recent ones.
-            # Let's assume the user is working on one course at a time or we just look at global recent performance.
-            # Better: Let's fetch recent 5 results globally as a proxy for "User's recent state".
             
-            recent_quizzes = db.query(QuizResult).order_by(QuizResult.timestamp.desc()).limit(3).all()
-            recent_feedback = db.query(UserFeedback).order_by(UserFeedback.timestamp.desc()).limit(3).all()
+            # 최근 퀴즈 결과 조회 (전역 기준, 향후 course_id로 필터링 가능)
+            recent_quiz_results = (
+                db.query(QuizResult)
+                .order_by(QuizResult.timestamp.desc())
+                .limit(3)
+                .all()
+            )
+            
+            # 최근 피드백 조회
+            recent_feedback_list = (
+                db.query(UserFeedback)
+                .order_by(UserFeedback.timestamp.desc())
+                .limit(3)
+                .all()
+            )
+            
             db.close()
 
+            # 컨텍스트 문자열 생성
             context_parts = []
-            if recent_quizzes:
+            
+            if recent_quiz_results:
                 context_parts.append("Recent Quiz Performance:")
-                for q in recent_quizzes:
-                    context_parts.append(f"- Chapter '{q.chapter_title}': Score {q.score}/100. Weak points: {q.weak_points}")
+                for quiz_result in recent_quiz_results:
+                    weak_points = quiz_result.weak_points or "없음"
+                    context_parts.append(
+                        f"- Chapter '{quiz_result.chapter_title}': "
+                        f"Score {quiz_result.score}/100. Weak points: {weak_points}"
+                    )
             
-            if recent_feedback:
+            if recent_feedback_list:
                 context_parts.append("Recent User Feedback:")
-                for f in recent_feedback:
-                    context_parts.append(f"- Chapter '{f.chapter_title}': Rating {f.rating}/5. Comment: '{f.comment}'")
+                for feedback in recent_feedback_list:
+                    comment = feedback.comment or "없음"
+                    context_parts.append(
+                        f"- Chapter '{feedback.chapter_title}': "
+                        f"Rating {feedback.rating}/5. Comment: '{comment}'"
+                    )
             
-            if not context_parts:
-                return ""
+            return "\n".join(context_parts) if context_parts else ""
             
-            return "\n".join(context_parts)
-        except Exception as e:
-            logger.error(f"Failed to get learning context: {e}")
-            return ""
+        except Exception as error:
+            logger.error(f"Failed to get learning context: {error}", exc_info=True)
+            return ""  # 컨텍스트 없이도 콘텐츠 생성 가능
 
     async def generate_learning_objectives(self, topic: str, language: str = "ko") -> dict:
         start_time = time.time()
@@ -282,31 +480,59 @@ class ContentGenerator:
 
         for attempt in range(max_retries):
             try:
-                # Debug logging
-                api_key = os.getenv("GEMINI_API_KEY")
-                if not api_key:
-                    logger.error("GEMINI_API_KEY is missing in generate_learning_objectives")
-                else:
-                    logger.info(f"Using API Key: {api_key[:5]}...{api_key[-5:]}")
-
+                # API 키 재검증 (런타임에서 변경되었을 수 있음)
+                if not self.model:
+                    error_msg = "Gemini model is not initialized. ContentGenerator may have failed to initialize."
+                    logger.error(error_msg)
+                    raise ValueError(error_msg)
+                
+                logger.info(f"Generating learning objectives for topic: '{topic}' (attempt {attempt + 1}/{max_retries})")
+                
                 response = await self.model.generate_content_async(
                     f"{system_message}\n\n{prompt}",
                     generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=2048),
                     safety_settings=self.safety_settings
                 )
+                
+                # 응답 검증
+                if not response or not response.text:
+                    raise ValueError("Empty response from Gemini API")
+                
                 result = self._clean_json(response.text)
+                
+                # 결과 검증
+                if "objectives" not in result or not isinstance(result.get("objectives"), list):
+                    raise ValueError(f"Invalid response format: missing 'objectives' field or not a list")
+                
+                if len(result.get("objectives", [])) == 0:
+                    raise ValueError("No objectives returned in response")
                 
                 # Log to DB
                 latency = int((time.time() - start_time) * 1000)
                 self._log_to_db("objectives", topic, prompt, json.dumps(result, ensure_ascii=False), latency)
                 
+                logger.info(f"Successfully generated {len(result.get('objectives', []))} learning objectives")
                 return result
+                
+            except ValueError as ve:
+                # 검증 에러는 즉시 실패 (재시도 불필요)
+                logger.error(f"Validation error in generate_learning_objectives: {ve}")
+                raise ve
             except Exception as e:
                 last_exception = e
-                logger.warning(f"Attempt {attempt + 1} failed: {e}")
-                await asyncio.sleep(1)  # Async sleep
+                error_type = type(e).__name__
+                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed ({error_type}): {e}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(1)  # Async sleep before retry
 
-        logger.error(f"All {max_retries} attempts failed. Last error: {last_exception}")
+        # 모든 재시도 실패
+        error_summary = f"All {max_retries} attempts failed. Last error ({type(last_exception).__name__}): {last_exception}"
+        logger.error(error_summary)
+        logger.error("Possible causes:")
+        logger.error("  1. Invalid or expired GEMINI_API_KEY")
+        logger.error("  2. Network connectivity issues")
+        logger.error("  3. Gemini API service unavailable")
+        logger.error("  4. Rate limiting or quota exceeded")
         raise last_exception
 
     async def generate_course(self, topic: str, description: str, difficulty: str, max_chapters: int, selected_objective: str = "", language: str = "ko") -> dict:
@@ -420,7 +646,8 @@ DO NOT start with "Okay", or "Alright" or any preambles. Just the output, please
 	"chapterDescription": "string"
 
 작업:
-You are an experienced educational content creator, skilled at transforming course details and specific prompts into comprehensive and well-structured self-study materials. Your goal is to generate 1000~1200 words worth of high-quality educational content in a markdown format that is easy for self-learners to understand. Use headings, subheadings, bullet points, etc. for easier understanding.
+You are an experienced educational content creator, skilled at transforming course details and specific prompts into comprehensive and well-structured self-study materials. Your goal is to generate 800~1000 words worth of high-quality educational content in a markdown format that is easy for self-learners to understand. Use headings, subheadings, bullet points, etc. for easier understanding.
+IMPORTANT: Ensure the JSON response is complete and valid. Do not truncate the output. Prioritize finishing the JSON structure over exceeding the word count.
 If reference materials are provided, use them to create accurate and comprehensive content that aligns with the reference materials.
 output language: ko
 

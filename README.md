@@ -4,8 +4,10 @@
 - **AI 모델**: Gemini 2.5 Flash / Gemini 2.0 Flash Exp
 - **벡터 DB**: FAISS with Semantic Chunking (LangChain)
 
-## ✨ 최신 개선 사항 (v1.9.0)
+## ✨ 최신 개선 사항 (v2.0.0)
 
+- 🔄 **RAG 기본화**: RAG 기능이 기본으로 활성화되며, `main.py`가 RAG 버전을 담당합니다.
+- 🐛 **안정성 개선**: 콘텐츠 잘림 현상 수정 및 포트 연결 안정화 (8001 포트)
 - 📊 **대시보드**: 최근 학습한 코스를 한눈에 볼 수 있는 대시보드 추가
 - 💾 **데이터 저장**: 코스와 챕터 내용이 DB에 저장되어 언제든 다시 학습 가능
 - 🔗 **고유 URL**: 코스 및 챕터별 고유 주소로 직접 접근 지원
@@ -55,7 +57,7 @@ python python_textbook_rag_generator.py --db-name python_textbook_gemini_db_sema
 ```bash
 cd app
 pip install -r requirements.txt
-uvicorn main_with_RAG:app --port 8001 --reload
+uvicorn app.main:app --port 8001 --reload
 ```
 
 서버가 실행되면 `http://localhost:8001/docs`에서 API 문서를 확인할 수 있습니다.
@@ -84,7 +86,7 @@ Pop-pins2/
 ├── app/                    # Backend (FastAPI)
 │   ├── services/          # [NEW] 비즈니스 로직 모듈
 │   │   └── generator.py   # 콘텐츠 생성 로직 (Gemini + RAG)
-│   ├── main_with_RAG.py   # 메인 앱 (서비스 호출)
+│   ├── main.py            # 메인 앱 (RAG 통합 버전)
 │   ├── requirements.txt
 │   └── README.md
 ├── frontend/              # Frontend (React)
@@ -146,4 +148,4 @@ Pop-pins2/
 
 ---
 
-**버전**: v1.9.0 | **최종 업데이트**: 2025-11-26
+**버전**: v2.0.0 | **최종 업데이트**: 2025-11-27

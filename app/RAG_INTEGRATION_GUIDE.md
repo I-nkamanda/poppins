@@ -1,6 +1,6 @@
 # RAG 벡터 DB 통합 가이드
 
-이 문서는 `main_with_RAG.py`를 사용하여 RAG 벡터 DB를 활용하는 방법을 설명합니다.
+이 문서는 `main.py` (RAG 통합 버전)를 사용하여 RAG 벡터 DB를 활용하는 방법을 설명합니다.
 
 ## 📋 개요
 
@@ -58,17 +58,17 @@ python python_textbook_rag_generator.py
 벡터 DB가 올바른 경로에 있고 환경 변수가 설정되어 있으면, 자동으로 RAG 기능이 활성화됩니다.
 
 ```bash
-# RAG 통합 버전 실행
-python app/main_with_RAG.py
+# RAG 통합 버전 실행 (메인)
+python app/main.py
 ```
 
 또는:
 
 ```bash
-uvicorn app.main_with_RAG:app --reload
+uvicorn app.main:app --reload
 ```
 
-**참고**: 원본 버전(RAG 없음)을 사용하려면 `main.py`를 사용하세요.
+**참고**: 레거시 버전(RAG 없음)을 사용하려면 `main(no RAG).py`를 사용하세요.
 
 ### RAG 기능 비활성화
 
@@ -82,7 +82,7 @@ USE_RAG=false
 
 ### 1. 애플리케이션 시작 시
 
-- `main_with_RAG.py` 실행 시 `startup_event()` 함수가 실행되어 벡터 DB를 로드합니다.
+- `main.py` 실행 시 `startup_event()` 함수가 실행되어 벡터 DB를 로드합니다.
 - 벡터 DB가 없거나 로드에 실패하면 경고 메시지를 출력하고 RAG 없이 동작합니다.
 - 벡터 DB가 성공적으로 로드되면 콘솔에 "✅ RAG 벡터 DB 로드 완료" 메시지가 표시됩니다.
 
@@ -207,7 +207,7 @@ USE_RAG=false
    ```
 3. FastAPI 서버 재시작:
    ```bash
-   python app/main_with_RAG.py
+   python app/main.py
    ```
 
 ## 📚 참고 자료

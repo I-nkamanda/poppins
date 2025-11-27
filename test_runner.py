@@ -17,7 +17,7 @@ with patch.dict(os.environ, {
     "USE_RAG": "false",
     "LOG_LEVEL": "WARNING"
 }):
-    from main_with_RAG import clean_json_response, extract_contents_from_json
+    from main import clean_json_response, extract_contents_from_json
     
     print("=" * 60)
     print("JSON 파싱 함수 테스트 시작")
@@ -92,4 +92,5 @@ with patch.dict(os.environ, {
     print("\n" + "=" * 60)
     print("테스트 완료")
     print("=" * 60)
+
 

@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.database import Base, get_db
-from app.main_with_RAG import app
+from app.main import app
 from app.models import Course, Chapter
 import json
 from unittest.mock import AsyncMock, patch
@@ -31,7 +31,7 @@ def client():
 
 @pytest.fixture
 def mock_generator():
-    with patch("app.main_with_RAG.generator") as mock:
+    with patch("app.main.generator") as mock:
         # Mock generate_course
         mock.generate_course = AsyncMock(return_value={
             "course": {

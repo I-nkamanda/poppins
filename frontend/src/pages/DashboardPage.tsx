@@ -1,5 +1,30 @@
+/**
+ * 대시보드 페이지
+ * 
+ * 사용자의 모든 학습 코스를 한눈에 볼 수 있는 메인 화면입니다.
+ * 
+ * 주요 기능:
+ * - 코스 목록 표시 (진행률, 완료 상태 포함)
+ * - 코스 삭제
+ * - 필터링 (전체/완료됨)
+ * - 통계 정보 (진행 중인 과정, 완료한 과정)
+ * 
+ * 데이터 로딩:
+ * - 컴포넌트 마운트 시 자동으로 코스 목록을 불러옵니다
+ * - 로딩 중에는 스피너 표시
+ * - 에러 발생 시 에러 메시지 표시
+ * 
+ * @component
+ * @returns {JSX.Element} 대시보드 UI
+ * 
+ * @example
+ * ```tsx
+ * // 라우팅에 의해 자동으로 렌더링됩니다
+ * <Route path="/" element={<DashboardPage />} />
+ * ```
+ */
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { getCourses, deleteCourse } from '../services/api';
 import type { CourseListItem } from '../types';
 
@@ -8,9 +33,20 @@ export default function DashboardPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<'all' | 'completed'>('all');
-    const navigate = useNavigate();
 
+    /**
+     * 컴포넌트 마운트 시 코스 목록을 불러옵니다.
+     * 
+     * useEffect를 사용하여 컴포넌트가 처음 렌더링될 때 한 번만 실행됩니다.
+     * 빈 의존성 배열 []을 사용하여 마운트 시에만 실행되도록 합니다.
+     */
     useEffect(() => {
+        /**
+         * API를 호출하여 코스 목록을 가져옵니다.
+         * 
+         * @async
+         * @function loadCourses
+         */
         const loadCourses = async () => {
             try {
                 const data = await getCourses();
@@ -19,20 +55,39 @@ export default function DashboardPage() {
                 console.error('Failed to load courses:', err);
                 setError('코스 목록을 불러오는 데 실패했습니다.');
             } finally {
-                setIsLoading(false);
+                setIsLoading(false); // 성공/실패 여부와 관계없이 로딩 상태 해제
             }
         };
 
         loadCourses();
-    }, []);
+    }, []); // 빈 배열: 마운트 시 한 번만 실행
 
+    /**
+     * 코스 삭제 핸들러
+     * 
+     * 사용자가 삭제 버튼을 클릭했을 때 호출됩니다.
+     * 확인 대화상자를 표시하고, 확인 시 API를 호출하여 코스를 삭제합니다.
+     * 
+     * @param e - 클릭 이벤트 (Link의 기본 동작 방지용)
+     * @param id - 삭제할 코스 ID
+     * 
+     * @example
+     * ```tsx
+     * <button onClick={(e) => handleDelete(e, course.id)}>삭제</button>
+     * ```
+     */
     const handleDelete = async (e: React.MouseEvent, id: number) => {
-        e.preventDefault(); // Prevent navigation
-        e.stopPropagation(); // Stop event bubbling to Link
-        if (!window.confirm('정말 이 코스를 삭제하시겠습니까? 복구할 수 없습니다.')) return;
+        e.preventDefault(); // Link의 기본 네비게이션 동작 방지
+        e.stopPropagation(); // 이벤트 버블링 중지 (부모 Link로 전파 방지)
+        
+        // 사용자 확인
+        if (!window.confirm('정말 이 코스를 삭제하시겠습니까? 복구할 수 없습니다.')) {
+            return; // 취소 시 함수 종료
+        }
 
         try {
             await deleteCourse(id);
+            // 삭제 성공 시 로컬 상태에서도 제거 (UI 즉시 업데이트)
             setCourses(courses.filter(c => c.id !== id));
         } catch (err) {
             console.error('Failed to delete course:', err);
@@ -40,7 +95,17 @@ export default function DashboardPage() {
         }
     };
 
-    const formatDate = (dateString: string) => {
+    /**
+     * 날짜 문자열을 한국어 형식으로 포맷팅합니다.
+     * 
+     * @param dateString - ISO 형식의 날짜 문자열
+     * @returns 포맷팅된 날짜 문자열 (예: "2025년 11월 26일")
+     * 
+     * 변경 이유:
+     * - 유틸리티 함수로 분리 가능하지만 현재는 컴포넌트 내부에서만 사용
+     * - 향후 다른 컴포넌트에서도 사용 시 utils로 이동 고려
+     */
+    const formatDate = (dateString: string): string => {
         return new Date(dateString).toLocaleDateString('ko-KR', {
             year: 'numeric',
             month: 'long',

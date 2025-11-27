@@ -69,7 +69,7 @@ VECTOR_DB_EMBEDDING_MODEL=gemini
 ```bash
 cd app
 pip install -r requirements.txt
-uvicorn main_with_RAG:app --port 8001 --reload
+uvicorn app.main:app --port 8001 --reload
 ```
 
 **Frontend:**

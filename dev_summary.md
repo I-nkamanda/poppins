@@ -7,7 +7,7 @@
 
 ## 주요 작업 흐름
 1. **Lazy‑Loading 구현**
-   - `main_with_RAG.py`에 두 개의 새로운 엔드포인트 추가
+   - `main.py`에 두 개의 새로운 엔드포인트 추가
      - `POST /generate-course` – 커리큘럼(목차)만 빠르게 생성
      - `POST /generate-chapter-content` – 선택된 챕터의 상세 내용(Concept, Exercise, Quiz) 생성
    - 기존 `POST /generate-study-material` 은 호환성을 위해 그대로 유지.
@@ -106,7 +106,7 @@
 
 1. **서비스 계층 분리 (Refactoring)**
    - `app/services/generator.py`에 `ContentGenerator` 클래스 구현
-   - `main_with_RAG.py`의 비즈니스 로직을 서비스 모듈로 이동
+   - `main.py`의 비즈니스 로직을 서비스 모듈로 이동
    - Gemini API 및 RAG 로직을 캡슐화하여 유지보수성 향상
 
 2. **프롬프트 관리 개선**
@@ -153,7 +153,7 @@
   - 위치: `RAG vector generator/vector_db/python_textbook_gemini_db_semantic`
 
 - **애플리케이션 통합**:
-  - `main_with_RAG.py`가 Semantic Vector DB 사용하도록 업데이트
+  - `main.py`가 Semantic Vector DB 사용하도록 업데이트
   - 환경 변수로 DB 경로 변경 가능
 
 ### 문서 업데이트
@@ -283,7 +283,7 @@
 
 1. **불필요한 파일 제거**
    - 사용하지 않는 `python_textbook_db` 벡터 DB 제거 (gemini 버전만 유지)
-   - `app/main_with_RAG_openai.py` 제거 (현재 Gemini 사용 중)
+   - `app/main(no RAG).py` - 레거시 버전 (RAG 없음, 이전 main.py)
    - `app/some.zip` 임시 파일 제거
    - `UNUSED_FILES.md` 정리 문서 제거
 
@@ -304,3 +304,24 @@
 ---
 *이 문서는 개발 진행 상황을 한눈에 파악할 수 있도록 요약했습니다. 필요에 따라 세부 내용은 각 파일 및 커밋 로그를 참고하세요.*
 
+
+## 2025-11-27: 시스템 안정화 및 RAG 기본화 (System Stabilization & RAG Default)
+
+### 1. 파일 구조 재정비 (File Restructuring)
+- **RAG 기본화**: `main_with_RAG.py`를 `main.py`로 변경하여 RAG 버전을 기본 실행 파일로 설정했습니다.
+- **레거시 보존**: 기존 `main.py`는 `main(no RAG).py`로 이름을 변경하여 백업했습니다.
+- **참조 업데이트**: 모든 테스트, 문서, 설정 파일에서 `main_with_RAG` 참조를 `main`으로 업데이트했습니다.
+
+### 2. 버그 수정 (Bug Fixes)
+- **포트 불일치 해결**: 프론트엔드(`frontend/src/services/api.ts`)가 8002 포트를 호출하던 문제를 8001로 수정하여 백엔드 연결 오류를 해결했습니다.
+- **콘텐츠 잘림 현상 수정**: `app/services/generator.py`를 개선하여 생성된 콘텐츠(JSON)가 중간에 잘리는 문제를 해결했습니다.
+    - 프롬프트 최적화 (단어 수 조절)
+    - `_repair_json` 로직 추가: 잘린 JSON 문자열을 자동으로 복구하여 에러 방지
+
+### 3. 테스트 및 검증 (Testing & Verification)
+- **Full Web Test Record Run**: 브라우저 자동화 테스트를 통해 전체 워크플로우(목표 생성 -> 코스 생성 -> 챕터 콘텐츠 확인)가 정상 작동함을 확인했습니다.
+- **QA 로그**: `qa_logs/suggestions.md`에 발견된 문제와 해결 과정을 기록했습니다.
+
+### 4. 다음 단계 (Next Steps)
+- **사용자 피드백 반영**: 실제 사용성을 높이기 위한 UI/UX 개선
+- **RAG 데이터 확장**: 더 많은 교재 데이터를 벡터 DB에 추가하여 답변 품질 향상

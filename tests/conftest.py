@@ -16,7 +16,7 @@ sys.path.insert(0, str(project_root / "app"))
 os.environ["GEMINI_API_KEY"] = "test-api-key"
 os.environ["USE_RAG"] = "false"
 
-from main_with_RAG import app
+from main import app
 from app.services.generator import ContentGenerator
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def mock_genai():
 @pytest.fixture
 def mock_content_generator(mock_genai):
     """ContentGenerator 모킹"""
-    with patch("main_with_RAG.generator") as mock_generator:
+    with patch("main.generator") as mock_generator:
         # Async methods need AsyncMock
         mock_generator.generate_learning_objectives = AsyncMock(return_value={
             "objectives": [
@@ -97,4 +97,5 @@ def sample_study_topic_request():
         "max_chapters": 2,
         "course_description": "파이썬 프로그래밍 기초"
     }
+
 

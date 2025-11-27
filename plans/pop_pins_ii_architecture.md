@@ -27,7 +27,7 @@ graph TB
     end
     
     subgraph "Application Layer"
-        C[FastAPI Backend<br/>Port: 8002]
+        C[FastAPI Backend<br/>Port: 8001]
         D[REST API Endpoints]
     end
     
@@ -114,7 +114,7 @@ src/
 **디렉토리 구조**:
 ```
 app/
-├── main_with_RAG.py          # 메인 애플리케이션
+├── main.py                   # 메인 애플리케이션 (RAG 통합)
 ├── database.py               # DB 연결 설정
 ├── models.py                 # DB 모델 (Course, Chapter, History, Feedback)
 ├── services/

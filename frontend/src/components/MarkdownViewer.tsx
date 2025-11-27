@@ -1,7 +1,36 @@
+/**
+ * Markdown 뷰어 컴포넌트
+ * 
+ * Markdown 형식의 텍스트를 렌더링하는 재사용 가능한 컴포넌트입니다.
+ * AI가 생성한 개념 설명, 실습 과제 등의 콘텐츠를 표시하는 데 사용됩니다.
+ * 
+ * 주요 기능:
+ * - Markdown 문법 지원 (제목, 리스트, 코드 블록 등)
+ * - GitHub Flavored Markdown (GFM) 지원
+ * - 코드 블록 하이라이팅
+ * - 반응형 디자인 (모바일 친화적)
+ * 
+ * 스타일링:
+ * - Tailwind CSS의 typography 플러그인 사용
+ * - 코드 블록은 다크 테마 적용
+ * - 인라인 코드는 핑크 배경
+ * 
+ * @component
+ * @param props - 컴포넌트 props
+ * @param props.content - 렌더링할 Markdown 문자열
+ * 
+ * @returns {JSX.Element} 렌더링된 Markdown 콘텐츠
+ * 
+ * @example
+ * ```tsx
+ * <MarkdownViewer content="# 제목\n\n이것은 **굵은** 텍스트입니다." />
+ * ```
+ */
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 interface MarkdownViewerProps {
+    /** 렌더링할 Markdown 형식의 문자열 */
     content: string;
 }
 

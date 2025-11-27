@@ -1,5 +1,22 @@
 # 변경 이력
 
+## [2.0.0] - 2025-11-27
+
+### 주요 변경 (Breaking Change)
+- **파일 명 변경**: RAG 버전이 이제 메인 버전이 됨
+  - `main_with_RAG.py` → `main.py` (메인 RAG 버전)
+  - `main.py` → `main(no RAG).py` (레거시 버전)
+- **기본 동작 변경**: 이제 기본적으로 RAG 기능을 사용하며, 필요시 `USE_RAG=false`로 비활성화 가능
+
+### 버그 수정 (Bug Fix)
+- **포트 불일치 수정**: 프론트엔드 API 호출 포트를 8002에서 8001로 수정하여 백엔드 연결 오류 해결
+- **콘텐츠 잘림 현상 수정**: 생성된 콘텐츠가 중간에 끊기는 문제를 해결하기 위해 프롬프트 최적화 및 JSON 복구 로직 추가
+
+### 갱신
+- 모든 테스트 파일 및 문서 업데이트
+- import 경로 및 참조 업데이트
+
+
 ## [1.9.0] - 2025-11-26
 
 ### 기능 추가 (Feature)
@@ -38,7 +55,7 @@
 
 ### 리팩토링 (Refactoring)
 - **서비스 계층 분리**: `app/services/generator.py`에 `ContentGenerator` 클래스 구현.
-- **모듈화**: `main_with_RAG.py`의 비즈니스 로직을 서비스 모듈로 이동하여 코드 구조 개선.
+- **모듈화**: `main.py`의 비즈니스 로직을 서비스 모듈로 이동하여 코드 구조 개선.
 - **유지보수성 향상**: API 엔드포인트와 비즈니스 로직의 분리로 향후 기능 확장(DB 연동, 피드백 루프 등) 용이.
 - **프롬프트 관리**: 모든 생성 프롬프트를 `ContentGenerator` 클래스 내에서 통합 관리.
 
@@ -70,7 +87,7 @@
 - **Checkpointing 기능 추가**: 파일 단위 중간 저장으로 안정성 향상
 
 ### 적용
-- `main_with_RAG.py`가 Semantic Vector DB (`python_textbook_gemini_db_semantic`) 사용하도록 업데이트
+- `main.py`가 Semantic Vector DB (`python_textbook_gemini_db_semantic`) 사용하도록 업데이트
 - 총 38개 PDF 파일, 1090개 청크 생성 (2025-11-24)
 
 ### 문서
@@ -135,7 +152,7 @@
 
 ### 변경
 - 원본 `main.py`는 RAG 기능 없이 유지
-- RAG 통합 버전은 별도 파일(`main_with_RAG.py`)로 분리
+- RAG 통합 버전은 별도 파일(`main_with_RAG.py`)로 분리 (2.0.0 이후 `main.py`가 RAG 버전이 됨)
 
 ### 기능
 - `generate_course()`: 커리큘럼 생성 시 교재 내용 참고

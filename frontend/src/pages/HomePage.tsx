@@ -1,3 +1,23 @@
+/**
+ * 새 코스 생성 페이지 (HomePage)
+ * 
+ * 사용자가 학습하고 싶은 주제를 입력하는 첫 화면입니다.
+ * 주제, 난이도, 챕터 수, 언어를 선택할 수 있습니다.
+ * 
+ * 사용자 플로우:
+ * 1. 주제 입력 및 설정 선택
+ * 2. "학습 자료 생성하기" 버튼 클릭
+ * 3. ObjectivesPage로 이동하여 학습 목표 선택
+ * 
+ * @component
+ * @returns {JSX.Element} 새 코스 생성 폼
+ * 
+ * @example
+ * ```tsx
+ * // 라우팅에 의해 자동으로 렌더링됩니다
+ * <Route path="/courses/new" element={<HomePage />} />
+ * ```
+ */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -8,11 +28,26 @@ export default function HomePage() {
     const [maxChapters, setMaxChapters] = useState(3);
     const [language, setLanguage] = useState('ko');
 
+    /**
+     * 폼 제출 핸들러
+     * 
+     * 사용자가 입력한 정보를 ObjectivesPage로 전달하여 학습 목표 선택 화면으로 이동합니다.
+     * 
+     * @param e - 폼 제출 이벤트
+     * 
+     * @example
+     * 사용자가 "파이썬 리스트"를 입력하고 제출하면:
+     * - topic: "파이썬 리스트"
+     * - difficulty: "중급"
+     * - maxChapters: 3
+     * - language: "ko"
+     * 이 정보가 ObjectivesPage로 전달됩니다.
+     */
     const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!topic.trim()) return;
+        e.preventDefault(); // 기본 폼 제출 동작 방지
+        if (!topic.trim()) return; // 주제가 비어있으면 제출하지 않음
 
-        // Navigate to ObjectivesPage to select a learning path
+        // 학습 목표 선택 페이지로 이동 (상태 전달)
         navigate('/objectives', { state: { topic, difficulty, maxChapters, language } });
     };
 

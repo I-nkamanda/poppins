@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from app.main_with_RAG import app
+from app.main import app
 
 def test_dashboard_flow(client, mock_content_generator):
     # 1. Generate a Course

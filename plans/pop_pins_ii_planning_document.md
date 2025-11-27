@@ -64,19 +64,6 @@ AI와 함께 설계하는 나만의 배움 여정을 제공하는 플랫폼
 2. 챕터 생성 - ✅ 완료
 3. 개념 생성 - ✅ 완료
 4. 문제 생성 - ✅ 완료
-5. 회원가입 - ⏳ 계획
-
-### 구현 현황 (Implementation Status)
-
-| 구성 요소 | 상태 | 비고 |
-|----------|------|------|
-| Backend API (FastAPI) | ✅ 완료 | `main_with_RAG.py` 구현 완료 |
-| RAG 벡터 DB (FAISS) | ✅ 완료 | 파이썬 교재 PDF 인덱싱 완료 |
-| AI 생성기 (4종) | ✅ 완료 | Course/Concept/Exercise/Quiz Maker |
-| API 문서 | ✅ 완료 | README, API_REFERENCE, RAG_INTEGRATION_GUIDE |
-| 통합 기획 문서 | ✅ 완료 | 5개 핵심 문서 작성 완료 |
-| Frontend (React) | ✅ 완료 | React + Vite, 주요 페이지 구현 완료 |
-| 사용자 인증 | ⏳ 계획 | MVP 이후 구현 |
 | 학습 히스토리 DB | ✅ 완료 | SQLite 연동, History API 구현 |
 | Feedback Loop | ✅ 완료 | 챕터별 피드백 수집 및 저장 |
 | LMS 통합 | ⏳ 계획 | Moodle 등 활용 검토 |
@@ -423,7 +410,7 @@ sqlalchemy
 - MVP 제작 완료
 
 **주요 성과**:
-- `main_with_RAG.py` 구현 완료
+- `main.py` 구현 완료
 - FAISS 벡터 DB 통합
 - 4가지 AI 생성기 구현
 - API 문서 작성
