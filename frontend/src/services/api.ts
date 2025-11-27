@@ -126,6 +126,39 @@ export const downloadChapter = async (data: ChapterRequest): Promise<{ filename:
     return response.data;
 };
 
+export const downloadChapterScorm = async (data: ChapterRequest): Promise<void> => {
+    const response = await axios.post(`${API_BASE_URL}/download-chapter-scorm`, data, {
+        responseType: 'blob'
+    });
+
+    // 브라우저에서 파일 다운로드 트리거
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+
+    // 파일명 추출 (헤더에서)
+    const contentDisposition = response.headers['content-disposition'];
+    let fileName = 'chapter_scorm.zip';
+    if (contentDisposition) {
+        // RFC 5987: filename*=UTF-8''encoded_filename
+        const filenameStarMatch = contentDisposition.match(/filename\*=UTF-8''(.+)/);
+        if (filenameStarMatch && filenameStarMatch.length === 2) {
+            fileName = decodeURIComponent(filenameStarMatch[1]);
+        } else {
+            // Fallback: filename="filename"
+            const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (fileNameMatch && fileNameMatch.length === 2)
+                fileName = fileNameMatch[1];
+        }
+    }
+
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+};
+
 export const gradeQuiz = async (data: QuizGradingRequest): Promise<QuizGradingResponse> => {
     const response = await axios.post(`${API_BASE_URL}/grade-quiz`, data);
     return response.data;

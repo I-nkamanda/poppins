@@ -199,6 +199,32 @@ export default function ChapterPage() {
         }
     };
 
+    const handleRegenerate = async () => {
+        if (!requestInfo || !chapterId) return;
+        const chapter = course.chapters.find(c => c.chapterId === parseInt(chapterId));
+        if (!chapter) return;
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const data = await generateChapterContent({
+                course_title: requestInfo.topic,
+                course_description: requestInfo.topic,
+                chapter_title: chapter.chapterTitle,
+                chapter_description: chapter.chapterDescription,
+                chapter_index: chapterIndex + 1,
+                force_refresh: true
+            });
+            setContent(data);
+        } catch (err) {
+            console.error('Failed to regenerate content:', err);
+            setError('콘텐츠 재생성에 실패했습니다.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Header */}
@@ -219,12 +245,40 @@ export default function ChapterPage() {
                             Chapter {chapterIndex + 1} / {course.chapters.length}
                         </div>
                         {content && (
-                            <button
-                                onClick={handleDownload}
-                                className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
-                            >
-                                📥 다운로드
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleDownload}
+                                    className="px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
+                                >
+                                    📥 다운로드 (.md)
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (!content || !requestInfo) return;
+                                        try {
+                                            const chapter = course.chapters.find(c => c.chapterId === parseInt(chapterId || '0'));
+                                            if (!chapter) return;
+
+                                            // 동적 import로 순환 참조 방지 및 필요한 시점에 로드
+                                            const { downloadChapterScorm } = await import('../services/api');
+
+                                            await downloadChapterScorm({
+                                                course_title: requestInfo.topic,
+                                                course_description: requestInfo.topic,
+                                                chapter_title: chapter.chapterTitle,
+                                                chapter_description: chapter.chapterDescription,
+                                                chapter_index: chapterIndex + 1,
+                                            });
+                                        } catch (err) {
+                                            console.error('SCORM 다운로드 실패:', err);
+                                            alert('SCORM 패키지 다운로드 중 오류가 발생했습니다.');
+                                        }
+                                    }}
+                                    className="px-3 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 rounded-md hover:bg-amber-100 transition-colors border border-amber-200"
+                                >
+                                    📦 SCORM 1.2
+                                </button>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -284,7 +338,20 @@ export default function ChapterPage() {
                                 <div className="animate-fadeIn">
                                     <h2 className="text-2xl font-bold text-gray-900 mb-4">{content.concept.title}</h2>
                                     <p className="text-gray-600 mb-8 italic">{content.concept.description}</p>
-                                    <MarkdownViewer content={content.concept.contents} />
+                                    {content.concept.title === 'Error' ? (
+                                        <div className="text-center py-10 bg-red-50 rounded-lg border border-red-100">
+                                            <p className="text-red-600 mb-4 font-medium">콘텐츠 생성에 실패했습니다.</p>
+                                            <p className="text-gray-500 mb-6 text-sm">{content.concept.contents}</p>
+                                            <button
+                                                onClick={handleRegenerate}
+                                                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
+                                            >
+                                                🔄 콘텐츠 재생성
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <MarkdownViewer content={content.concept.contents} />
+                                    )}
                                 </div>
                             )}
 
@@ -292,7 +359,20 @@ export default function ChapterPage() {
                                 <div className="animate-fadeIn">
                                     <h2 className="text-2xl font-bold text-gray-900 mb-4">{content.exercise.title}</h2>
                                     <p className="text-gray-600 mb-8 italic">{content.exercise.description}</p>
-                                    <MarkdownViewer content={content.exercise.contents} />
+                                    {content.exercise.title === 'Error' ? (
+                                        <div className="text-center py-10 bg-red-50 rounded-lg border border-red-100">
+                                            <p className="text-red-600 mb-4 font-medium">콘텐츠 생성에 실패했습니다.</p>
+                                            <p className="text-gray-500 mb-6 text-sm">{content.exercise.contents}</p>
+                                            <button
+                                                onClick={handleRegenerate}
+                                                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
+                                            >
+                                                🔄 콘텐츠 재생성
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <MarkdownViewer content={content.exercise.contents} />
+                                    )}
                                 </div>
                             )}
 

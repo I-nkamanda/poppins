@@ -37,6 +37,7 @@ export interface Quiz {
 
 export interface AdvancedItem {
     quiz: string;
+    model_answer?: string;  // 모범 답안 (SCORM용)
 }
 
 export interface AdvancedLearning {
@@ -71,6 +72,8 @@ export interface ChapterRequest {
     course_description: string;
     chapter_title: string;
     chapter_description: string;
+    chapter_index?: number;
+    force_refresh?: boolean;
 }
 
 export interface CourseResponse {

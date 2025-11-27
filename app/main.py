@@ -101,6 +101,7 @@ app.add_middleware(
     allow_credentials=True,  # 쿠키/인증 정보 허용
     allow_methods=["*"],  # 모든 HTTP 메서드 허용 (GET, POST, DELETE 등)
     allow_headers=["*"],  # 모든 헤더 허용
+    expose_headers=["Content-Disposition"],  # 파일 다운로드 시 파일명 확인을 위해 필요
 )
 
 # ============================================================================
@@ -207,11 +208,13 @@ class ChapterRequest(BaseModel):
             예: "리스트 기초"
         chapter_description (str): 챕터 설명 (필수)
             이 챕터에서 다룰 내용에 대한 간단한 설명
+        chapter_index: Optional[int] = None  # 챕터 번호 (파일명 생성용)
     """
     course_title: str
     course_description: str
     chapter_title: str
     chapter_description: str
+    chapter_index: Optional[int] = None  # 챕터 번호 (파일명 생성용)
 
 
 # ============================================================================
@@ -256,6 +259,7 @@ class QuizItem(BaseModel):
     개별 퀴즈 문제 모델 (주관식 - 심화 학습용)
     """
     quiz: str
+    model_answer: Optional[str] = None  # 모범 답안 (SCORM용)
 
 class MultipleChoiceQuizItem(BaseModel):
     """
@@ -557,6 +561,14 @@ async def generate_course_only(request: StudyTopicRequest, db: Session = Depends
         raise handle_generation_error("커리큘럼 생성", error)
 
 
+class ChapterRequest(BaseModel):
+    course_title: str
+    course_description: str
+    chapter_title: str
+    chapter_description: str
+    chapter_index: Optional[int] = None
+    force_refresh: Optional[bool] = False  # 강제 재생성 여부
+
 @app.post("/generate-chapter-content", response_model=ChapterContent)
 async def generate_chapter_content_only(request: ChapterRequest, db: Session = Depends(get_db)):
     """
@@ -624,15 +636,15 @@ async def generate_chapter_content_only(request: ChapterRequest, db: Session = D
     # ContentGenerator 초기화 확인
     validate_generator_initialized(generator)
 
-    # 캐시 키 생성 (유틸리티 함수 사용 - 중복 제거)
-    cache_key = create_chapter_cache_key(
-        course_title=request.course_title,
-        chapter_title=request.chapter_title,
-        chapter_description=request.chapter_description
+    # 캐시 키 생성 (튜플로 통일)
+    cache_key = (
+        request.course_title,
+        request.chapter_title,
+        request.chapter_description,
     )
 
-    # 1. 메모리 캐시 확인
-    if cache_key in chapter_cache:
+    # 1. 메모리 캐시 확인 (force_refresh가 아닐 때만)
+    if not request.force_refresh and cache_key in chapter_cache:
         logger.info(f"캐시에서 로드: {request.chapter_title}")
         return chapter_cache[cache_key]
 
@@ -642,7 +654,7 @@ async def generate_chapter_content_only(request: ChapterRequest, db: Session = D
     # We will skip DB read for now and rely on generation/cache, but we WILL save to DB.
     # Future improvement: Pass chapter_id in request.
 
-    logger.info(f"챕터 콘텐츠 생성 시작: {request.chapter_title}")
+    logger.info(f"챕터 콘텐츠 생성 시작 (Force Refresh: {request.force_refresh}): {request.chapter_title}")
     try:
         # Fetch learning context (adaptive learning)
         learning_context = generator.get_learning_context(request.course_title)
@@ -676,22 +688,28 @@ async def generate_chapter_content_only(request: ChapterRequest, db: Session = D
 
         concept_data, exercise_data, quiz_data, advanced_data = results
 
+        has_error = False
+
         # 에러 처리
         if isinstance(concept_data, Exception):
             logger.error(f"Concept generation failed: {concept_data}")
             concept_data = {"title": "Error", "description": "Failed to generate concept", "contents": "Error occurred."}
+            has_error = True
         
         if isinstance(exercise_data, Exception):
             logger.error(f"Exercise generation failed: {exercise_data}")
             exercise_data = {"title": "Error", "description": "Failed to generate exercise", "contents": "Error occurred."}
+            has_error = True
             
         if isinstance(quiz_data, Exception):
             logger.error(f"Quiz generation failed: {quiz_data}")
             quiz_data = {"quizes": []}
+            has_error = True
 
         if isinstance(advanced_data, Exception):
             logger.error(f"Advanced learning generation failed: {advanced_data}")
-            advanced_data = {"title": "Error", "description": "Failed to generate advanced learning", "contents": "Error occurred."}
+            advanced_data = {"quizes": [{"quiz": "Error: Failed to generate advanced learning content."}]}
+            has_error = True
 
         logger.info(f"챕터 콘텐츠 생성 완료: {request.chapter_title}")
 
@@ -708,19 +726,22 @@ async def generate_chapter_content_only(request: ChapterRequest, db: Session = D
             advanced_learning=AdvancedLearningResponse(**advanced_data)
         )
 
-        # 캐시에 저장
-        chapter_cache[cache_key] = result
-        logger.debug(f"캐시에 저장: {request.chapter_title}")
-        
-        # DB에 저장 (헬퍼 함수 사용 - 중복 제거 및 가독성 향상)
-        save_chapter_content_to_db(
-            db=db,
-            course_title=request.course_title,
-            chapter_title=request.chapter_title,
-            concept_data=concept_data,
-            exercise_data=exercise_data,
-            quiz_data=quiz_data
-        )
+        # 캐시에 저장 (에러가 없을 때만)
+        if not has_error:
+            chapter_cache[cache_key] = result
+            logger.debug(f"캐시에 저장: {request.chapter_title}")
+            
+            # DB에 저장 (헬퍼 함수 사용 - 중복 제거 및 가독성 향상)
+            save_chapter_content_to_db(
+                db=db,
+                course_title=request.course_title,
+                chapter_title=request.chapter_title,
+                concept_data=concept_data,
+                exercise_data=exercise_data,
+                quiz_data=quiz_data
+            )
+        else:
+            logger.warning(f"생성 중 에러가 발생하여 캐시/DB 저장을 건너뜁니다: {request.chapter_title}")
 
         return result
     except HTTPException:
@@ -839,12 +860,71 @@ async def download_chapter(request: ChapterRequest):
 
     # 파일명 생성: 특수문자 제거 및 공백을 언더스코어로 변경
     import re
+    import urllib.parse
+    
     safe_filename = re.sub(r'[<>:"/\\|?*]', '', content.chapter.chapterTitle)
     safe_filename = safe_filename.replace(' ', '_')
     
+    # 챕터 번호가 있으면 파일명 앞에 추가
+    prefix = f"{request.chapter_index}_" if request.chapter_index is not None else ""
+    
+    # URL 인코딩 (RFC 5987) - 다운로드 시 한글 깨짐 방지
+    encoded_filename = urllib.parse.quote(f"{prefix}{safe_filename}.md")
+    
     return DownloadResponse(
-        filename=f"{safe_filename}.md",
+        filename=f"{prefix}{safe_filename}.md", # 브라우저가 알아서 처리하도록 일반 파일명 반환 (헤더는 FastAPI가 처리)
         content=markdown
+    )
+
+
+@app.post("/download-chapter-scorm")
+async def download_chapter_scorm(request: ChapterRequest):
+    """
+    챕터 콘텐츠를 SCORM 1.2 패키지(ZIP)로 반환합니다.
+    """
+    from fastapi.responses import StreamingResponse
+    from app.services.scorm_service import ScormService
+    
+    # 캐시에서 가져오거나 생성
+    cache_key = (
+        request.course_title,
+        request.chapter_title,
+        request.chapter_description,
+    )
+
+    if cache_key in chapter_cache:
+        content = chapter_cache[cache_key]
+    else:
+        content = await generate_chapter_content_only(request)
+
+    # SCORM 패키지 생성
+    # Pydantic 모델을 dict로 변환하여 전달
+    chapter_data = {
+        "concept": content.concept.model_dump(),
+        "exercise": content.exercise.model_dump(),
+        "quiz": content.quiz.model_dump(),
+        "advanced_learning": content.advanced_learning.model_dump()
+    }
+    
+    zip_buffer = ScormService.create_scorm_package(content.chapter.chapterTitle, chapter_data)
+    
+    # 파일명 안전하게 처리 및 인코딩
+    import re
+    import urllib.parse
+    
+    # 파일명에서 특수문자 제거 (공백은 유지)
+    safe_filename = re.sub(r'[<>:"/\\|?*]', '', content.chapter.chapterTitle)
+    
+    # 챕터 번호가 있으면 파일명 앞에 추가 (예: "1_챕터제목_scorm.zip")
+    prefix = f"{request.chapter_index}_" if request.chapter_index is not None else ""
+    
+    # URL 인코딩 (RFC 5987)
+    encoded_filename = urllib.parse.quote(f"{prefix}{safe_filename}_scorm.zip")
+    
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}"}
     )
 
 
@@ -1026,6 +1106,10 @@ class CourseListItem(BaseModel):
     topic: str
     description: str
     level: str
+    created_at: str
+    chapter_count: int
+    completed_chapters: int
+    progress: int
     
 @app.get("/quiz-results", response_model=QuizResultListResponse)
 def get_quiz_results(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):

@@ -68,12 +68,12 @@ export default function MarkdownViewer({ content }: MarkdownViewerProps) {
                             </div>
                         );
                     },
-                    // 문단 처리 - word-break 추가
+                    // 문단 처리 - word-break 추가 (div로 변경하여 nesting 오류 방지)
                     p({ children, ...props }: any) {
                         return (
-                            <p className="break-words whitespace-pre-wrap mb-4" {...props}>
+                            <div className="break-words whitespace-pre-wrap mb-4" {...props}>
                                 {children}
-                            </p>
+                            </div>
                         );
                     },
                     // 헤더 크기 조정 (너무 크지 않게)

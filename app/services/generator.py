@@ -843,7 +843,10 @@ output language: ko
 
 작업:
 You are an expert educational content creator. Your task is to generate three subjective essay-type "Advanced Learning" questions that provoke thoughtful responses and deep understanding.
-The output must be a JSON array named `quizes`, containing three objects, each with a `quiz` (string) field.
+For each question, also provide a comprehensive model answer that demonstrates depth of understanding and critical thinking.
+The output must be a JSON array named `quizes`, containing three objects, each with:
+- `quiz` (string): The question
+- `model_answer` (string): A detailed model answer (200-300 words in Korean)
 
 output language: ko
 
@@ -851,13 +854,16 @@ output language: ko
 {
   "quizes" : [
     {
-      "quiz" : "string"
+      "quiz" : "string",
+      "model_answer" : "string"
     },
     {
-      "quiz" : "string"
+      "quiz" : "string",
+      "model_answer" : "string"
     },
     {
-      "quiz" : "string"
+      "quiz" : "string",
+      "model_answer" : "string"
     }
   ]
 }
@@ -865,6 +871,7 @@ output language: ko
 ⚠️ 규칙:
 - 반드시 위 JSON 구조만 출력하세요.
 - 절대로 {"output": {...}} 또는 문자열(JSON string) 형태로 감싸지 마세요.
+- model_answer는 학습자가 스스로 답을 작성한 후 참고할 수 있는 모범적인 답안이어야 합니다.
 """
 
         response = await self.model.generate_content_async(
