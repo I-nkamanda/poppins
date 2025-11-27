@@ -16,3 +16,4 @@ __all__ = [
     'calculate_course_progress',
 ]
 
+

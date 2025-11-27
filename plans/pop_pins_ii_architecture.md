@@ -2,7 +2,7 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Architecture Diagram & System Design  
-**버전**: 1.9.0  
+**버전**: 1.10.0  
 **작성일**: 2025-11-22  
 **작성자**: 이진걸  
 **최종 업데이트**: 2025-11-26
@@ -113,16 +113,32 @@ src/
 
 **디렉토리 구조**:
 ```
-app/
-├── main.py                   # 메인 애플리케이션 (RAG 통합)
-├── database.py               # DB 연결 설정
-├── models.py                 # DB 모델 (Course, Chapter, History, Feedback)
-├── services/
-│   └── generator.py          # AI 생성 로직 (Retry Logic 포함)
-├── .env                       # 환경 변수
-├── requirements.txt           # 의존성
-└── vector_db/                 # FAISS 벡터 DB
-    └── python_textbook_gemini_db/
+pop_pins_2/
+├── app/                       # 백엔드 애플리케이션
+│   ├── main.py               # 메인 애플리케이션 (RAG 통합)
+│   ├── database.py           # DB 연결 설정
+│   ├── models.py             # DB 모델 (Course, Chapter, History, Feedback)
+│   ├── services/
+│   │   ├── generator.py      # AI 생성 로직 (Retry Logic 포함)
+│   │   └── scorm_service.py  # SCORM 패키지 생성 (v1.10.0)
+│   ├── .env                  # 환경 변수
+│   └── requirements.txt      # 의존성 (제거됨, 루트로 통합)
+├── frontend/                  # 프론트엔드 애플리케이션
+│   └── src/
+│       ├── pages/            # React 페이지 컴포넌트
+│       ├── components/       # 재사용 컴포넌트
+│       └── services/         # API 클라이언트
+├── tests/                     # 테스트 파일 (v1.10.0 정리)
+│   ├── test_*.py             # 단위 및 통합 테스트
+│   └── conftest.py           # Pytest 설정
+├── scripts/                   # 유틸리티 스크립트 (v1.10.0 정리)
+│   ├── rag/                  # RAG/Vector DB 도구
+│   ├── db/                   # 데이터베이스 관리 도구
+│   └── qa/                   # QA 및 개발 도구
+├── vector_db/                 # FAISS 벡터 DB
+│   └── python_textbook_gemini_db/
+├── requirements.txt           # Python 의존성 (통합됨)
+└── .gitignore                # Git 무시 파일
 ```
 
 **API 엔드포인트**:
@@ -427,7 +443,7 @@ graph LR
 
 ---
 
-**문서 버전**: 1.9.0  
+**문서 버전**: 1.10.0  
 **최종 수정일**: 2025-11-26  
 **상태**: 현재 아키텍처 문서화 완료 (Backend + Frontend + DB + Persistence)  
 **다음 단계**: 배포 파이프라인 구축

@@ -27,3 +27,4 @@ def create_chapter_cache_key(course_title: str, chapter_title: str, chapter_desc
     """
     return f"{course_title}:{chapter_title}:{chapter_description}"
 
+

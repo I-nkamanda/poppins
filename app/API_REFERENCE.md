@@ -387,7 +387,7 @@ API 정보를 반환합니다.
 
 ## 버전 정보
 
-- API 버전: 1.9.0
+- API 버전: 1.10.0
 - FastAPI 버전: 0.104.0+
 - Gemini 모델: gemini-2.5-flash
 

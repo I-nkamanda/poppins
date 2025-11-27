@@ -1,0 +1,11 @@
+# Standalone App Dependencies
+# PyWebview + FastAPI 데스크탑 앱 실행에 필요한 패키지
+
+# WebView (네이티브 앱처럼 보이게)
+pywebview>=4.0.0
+
+# HTTP 요청 (서버 상태 체크용)
+requests>=2.31.0
+
+# 참고: FastAPI 및 기타 의존성은 루트 requirements.txt 참조
+# 이 파일은 standalone 실행에 추가로 필요한 패키지만 명시

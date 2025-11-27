@@ -173,3 +173,4 @@ def calculate_course_progress(chapters: list) -> Tuple[int, int, int]:
     
     return total_chapters, completed_chapters, progress
 
+

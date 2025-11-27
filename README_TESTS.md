@@ -70,3 +70,4 @@ def test_health_check(client):
 - RAG 기능은 기본적으로 비활성화됩니다 (`USE_RAG=false`)
 
 
+
