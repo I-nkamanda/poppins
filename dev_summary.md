@@ -325,3 +325,27 @@
 ### 4. 다음 단계 (Next Steps)
 - **사용자 피드백 반영**: 실제 사용성을 높이기 위한 UI/UX 개선
 - **RAG 데이터 확장**: 더 많은 교재 데이터를 벡터 DB에 추가하여 답변 품질 향상
+
+## 2024-11-27: Chapter Content Restructuring (v2.1.0)
+
+### 1. Content Structure Changes
+- **Multiple Choice Quizzes (MCQ)**: Replaced the previous subjective quiz section with a new 'Quiz' section containing 5 multiple-choice questions.
+  - Each question has 4 options, a correct answer, and an explanation.
+  - Implemented client-side answer checking for immediate feedback.
+- **Advanced Learning**: Moved the original 3 subjective questions to a new 'Advanced Learning' section.
+  - Retained the existing grading logic (score, feedback, improvements) for these questions.
+
+### 2. Backend Updates (app/main.py, app/services/generator.py)
+- Updated ChapterContent and QuizResponse Pydantic models to support both MultipleChoiceQuizItem and AdvancedLearningResponse.
+- Modified /generate-chapter-content to execute generate_quiz (MCQ) and generate_advanced_learning (Subjective) in parallel.
+- Refined prompts to ensure correct JSON format and high-quality question generation.
+
+### 3. Frontend Updates (frontend/src/pages/ChapterPage.tsx)
+- Added a tabbed interface for 'Concept', 'Exercise', 'Quiz (MCQ)', and 'Advanced Learning'.
+- Implemented UI for rendering MCQs with radio buttons and result display.
+- Updated state management to handle MCQ answers and results separately from subjective quiz grading.
+
+### 4. Fixes
+- **Content Truncation**: Addressed an issue where generated JSON was being truncated, ensuring complete content delivery.
+- **Port Mismatch**: Fixed a configuration issue where the frontend was targeting the wrong backend port (8001).
+

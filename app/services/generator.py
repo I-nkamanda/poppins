@@ -750,8 +750,75 @@ output language: ko
         return result
 
     async def generate_quiz(self, course_title: str, chapter_title: str, chapter_desc: str, course_prompt: str = "", learning_context: str = "") -> dict:
+        """Generate 5 Multiple Choice Questions."""
         start_time = time.time()
-        search_query = f"{chapter_title} {chapter_desc} 퀴즈 문제"
+        search_query = f"{chapter_title} {chapter_desc} 객관식 퀴즈"
+        rag_context = await self.search_context(search_query, k=3)
+
+        prompt_parts = [
+            f"Course Title: {course_title}",
+            f"Chapter Title: {chapter_title}",
+            f"Course Prompt: {course_prompt}",
+        ]
+        if learning_context:
+            prompt_parts.append(f"\n[User Learning Context]\n{learning_context}")
+
+        if rag_context:
+            prompt_parts.append(f"\n[참고 교재 자료]\n{rag_context}")
+
+        prompt = "\n".join(prompt_parts)
+
+        system_message = """당신은 JSON 응답 전용 AI입니다.
+입력 데이터는 다음 형식으로 주어집니다:
+	"courseTitle": "string",
+	"chapterTitle": "string"
+
+작업:
+You are an expert quiz generator. Create 5 multiple-choice questions (4 options each) based on the chapter content.
+Output must be a JSON object with a "quizes" array.
+Each item in "quizes" must have:
+- "question": string
+- "options": array of 4 strings
+- "answer": string (must be one of the options)
+- "explanation": string (explanation of the correct answer)
+
+output language: ko
+
+출력 형식 (반드시 JSON):
+{
+  "quizes": [
+    {
+      "question": "string",
+      "options": ["string", "string", "string", "string"],
+      "answer": "string",
+      "explanation": "string"
+    },
+    ... (5 items)
+  ]
+}
+
+⚠️ 규칙:
+- 반드시 위 JSON 구조만 출력하세요.
+- 절대로 {"output": {...}} 또는 문자열(JSON string) 형태로 감싸지 마세요.
+"""
+
+        response = await self.model.generate_content_async(
+            f"{system_message}\n\n{prompt}",
+            generation_config=genai.types.GenerationConfig(temperature=0.7, max_output_tokens=8192),
+            safety_settings=self.safety_settings
+        )
+        
+        result = self._clean_json(response.text)
+        
+        # Log to DB
+        latency = int((time.time() - start_time) * 1000)
+        self._log_to_db("quiz", chapter_title, prompt, json.dumps(result, ensure_ascii=False), latency)
+
+        return result
+
+    async def generate_advanced_learning(self, course_title: str, chapter_title: str, chapter_desc: str, course_prompt: str = "", learning_context: str = "") -> dict:
+        start_time = time.time()
+        search_query = f"{chapter_title} {chapter_desc} 심화 학습 주관식 문제"
         rag_context = await self.search_context(search_query, k=3)
 
         prompt_parts = [
@@ -775,13 +842,10 @@ output language: ko
 	"chapterDescription": "string"
 
 작업:
-You are an expert quiz question generator, skilled at crafting subjective essay-type questions that provoke thoughtful responses. Your task is to generate three subjective essay-type quiz questions based on the provided course title, chapter title, and course prompt. The output must be a JSON array named `quizes`, containing three objects, each with a `quiz` (string) field.
-If reference materials are provided, use them to create questions that test understanding of the key concepts covered in the reference materials.
-# Step by Step instructions
-1. Acknowledge the provided Course Title, Chapter Title, and Course Prompt.
-2. Generate one subjective essay-type quiz question that is related to the Course Title, Chapter Title, and Course Prompt.
-3. Review the question generated so far. If three questions have been generated, proceed to the next step. Otherwise, return to Step 2 and generate another question.
-4. Format the three generated questions into a JSON array named `quizes`, where each question is an object with a `quiz` field.
+You are an expert educational content creator. Your task is to generate three subjective essay-type "Advanced Learning" questions that provoke thoughtful responses and deep understanding.
+The output must be a JSON array named `quizes`, containing three objects, each with a `quiz` (string) field.
+
+output language: ko
 
 출력 형식 (반드시 JSON):
 {
@@ -801,11 +865,7 @@ If reference materials are provided, use them to create questions that test unde
 ⚠️ 규칙:
 - 반드시 위 JSON 구조만 출력하세요.
 - 절대로 {"output": {...}} 또는 문자열(JSON string) 형태로 감싸지 마세요.
-- 대화형 멘트, 설명, 사족 없이 오직 JSON 데이터만 출력하세요.
-- "contents" 필드는 markdown 문서 본문으로 채우세요 .
-⚠️ 출력 시 절대로 Markdown 코드블록(```json`, ``` 등)을 포함하지 마세요.
-⚠️ 절대로 {"output": {...}} 형태로 감싸지 말고, 
-오직 {"title": "...", "description": "...", "contents": "..."} 구조로만 출력하세요."""
+"""
 
         response = await self.model.generate_content_async(
             f"{system_message}\n\n{prompt}",
@@ -817,7 +877,7 @@ If reference materials are provided, use them to create questions that test unde
         
         # Log to DB
         latency = int((time.time() - start_time) * 1000)
-        self._log_to_db("quiz", chapter_title, prompt, json.dumps(result, ensure_ascii=False), latency)
+        self._log_to_db("advanced_learning", chapter_title, prompt, json.dumps(result, ensure_ascii=False), latency)
 
         return result
 

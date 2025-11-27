@@ -5,7 +5,7 @@ import { generateChapterContent, downloadChapter, gradeQuiz, submitFeedback } fr
 import MarkdownViewer from '../components/MarkdownViewer';
 import SurveyModal from '../components/SurveyModal';
 
-type TabType = 'concept' | 'exercise' | 'quiz';
+type TabType = 'concept' | 'exercise' | 'quiz' | 'advanced';
 
 export default function ChapterPage() {
     const { chapterId } = useParams();
@@ -17,6 +17,8 @@ export default function ChapterPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<{ [key: number]: string }>({});
+    const [mcqAnswers, setMcqAnswers] = useState<{ [key: number]: string }>({}); // For MCQs
+    const [mcqResults, setMcqResults] = useState<{ [key: number]: boolean | null }>({}); // null: not checked, true: correct, false: incorrect
     const [quizGradings, setQuizGradings] = useState<{ [key: number]: QuizGradingResponse | null }>({});
     const [gradingLoading, setGradingLoading] = useState<{ [key: number]: boolean }>({});
 
@@ -235,7 +237,8 @@ export default function ChapterPage() {
                         {[
                             { id: 'concept', name: '개념 학습' },
                             { id: 'exercise', name: '실습 과제' },
-                            { id: 'quiz', name: '퀴즈' },
+                            { id: 'quiz', name: '퀴즈 (객관식)' },
+                            { id: 'advanced', name: '심화 학습 (주관식)' },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
@@ -295,15 +298,100 @@ export default function ChapterPage() {
 
                             {activeTab === 'quiz' && (
                                 <div className="animate-fadeIn">
-                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">학습 점검 퀴즈</h2>
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">학습 점검 퀴즈 (객관식)</h2>
                                     <div className="space-y-8">
                                         {content.quiz.quizes.map((q, idx) => {
-                                            const grading = quizGradings[idx];
-                                            const isGrading = gradingLoading[idx];
+                                            const isCorrect = mcqResults[idx];
+                                            const selectedAnswer = mcqAnswers[idx];
+
                                             return (
                                                 <div key={idx} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
                                                     <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 mb-3">
                                                         문제 {idx + 1}
+                                                    </span>
+                                                    <h3 className="text-lg font-medium text-gray-900 mb-4">{q.question}</h3>
+
+                                                    <div className="space-y-3">
+                                                        {q.options.map((option, optIdx) => (
+                                                            <label
+                                                                key={optIdx}
+                                                                className={`flex items-center p-3 rounded-md border cursor-pointer transition-colors ${selectedAnswer === option
+                                                                    ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500'
+                                                                    : 'border-gray-300 bg-white hover:bg-gray-50'
+                                                                    } ${isCorrect !== undefined && isCorrect !== null && option === q.answer ? 'bg-green-50 border-green-500 ring-1 ring-green-500' : ''}`}
+                                                            >
+                                                                <input
+                                                                    type="radio"
+                                                                    name={`quiz-${idx}`}
+                                                                    value={option}
+                                                                    checked={selectedAnswer === option}
+                                                                    onChange={() => {
+                                                                        if (isCorrect === undefined || isCorrect === null) {
+                                                                            setMcqAnswers({ ...mcqAnswers, [idx]: option });
+                                                                        }
+                                                                    }}
+                                                                    disabled={isCorrect !== undefined && isCorrect !== null}
+                                                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                                                                />
+                                                                <span className="ml-3 text-gray-900">{option}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+
+                                                    {isCorrect === undefined || isCorrect === null ? (
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!selectedAnswer) return;
+                                                                const correct = selectedAnswer === q.answer;
+                                                                setMcqResults({ ...mcqResults, [idx]: correct });
+                                                            }}
+                                                            disabled={!selectedAnswer}
+                                                            className={`mt-4 px-4 py-2 rounded-md text-sm font-medium ${!selectedAnswer
+                                                                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                                }`}
+                                                        >
+                                                            정답 확인
+                                                        </button>
+                                                    ) : (
+                                                        <div className={`mt-4 p-4 rounded-md ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                                                            <p className={`font-bold ${isCorrect ? 'text-green-800' : 'text-red-800'}`}>
+                                                                {isCorrect ? '✓ 정답입니다!' : '✗ 오답입니다.'}
+                                                            </p>
+                                                            <p className="mt-2 text-gray-700">
+                                                                <span className="font-semibold">해설:</span> {q.explanation}
+                                                            </p>
+                                                            {!isCorrect && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setMcqResults({ ...mcqResults, [idx]: null });
+                                                                        setMcqAnswers({ ...mcqAnswers, [idx]: '' });
+                                                                    }}
+                                                                    className="mt-3 text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                                                                >
+                                                                    다시 풀기
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'advanced' && (
+                                <div className="animate-fadeIn">
+                                    <h2 className="text-2xl font-bold text-gray-900 mb-6">심화 학습 (주관식)</h2>
+                                    <div className="space-y-8">
+                                        {content.advanced_learning.quizes.map((q, idx) => {
+                                            const grading = quizGradings[idx];
+                                            const isGrading = gradingLoading[idx];
+                                            return (
+                                                <div key={idx} className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                                                    <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 mb-3">
+                                                        심화 문제 {idx + 1}
                                                     </span>
                                                     <h3 className="text-lg font-medium text-gray-900 mb-4">{q.quiz}</h3>
                                                     <textarea
@@ -375,54 +463,56 @@ export default function ChapterPage() {
                 </div>
 
                 {/* Feedback Section */}
-                {content && (
-                    <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">이 챕터는 어떠셨나요?</h3>
-                        {!feedbackSubmitted ? (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    {[1, 2, 3, 4, 5].map((star) => (
+                {
+                    content && (
+                        <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h3 className="text-lg font-bold text-gray-900 mb-4">이 챕터는 어떠셨나요?</h3>
+                            {!feedbackSubmitted ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                onClick={() => setRating(star)}
+                                                className={`text-2xl focus:outline-none transition-transform hover:scale-110 ${rating >= star ? 'text-yellow-400' : 'text-gray-300'
+                                                    }`}
+                                            >
+                                                ★
+                                            </button>
+                                        ))}
+                                        <span className="text-sm text-gray-500 ml-2">
+                                            {rating > 0 ? `${rating}점` : '별점을 선택해주세요'}
+                                        </span>
+                                    </div>
+                                    <textarea
+                                        className="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 placeholder:text-gray-400"
+                                        placeholder="좋았던 점이나 아쉬웠던 점을 자유롭게 남겨주세요 (선택사항)"
+                                        rows={3}
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                    />
+                                    <div className="flex justify-end">
                                         <button
-                                            key={star}
-                                            onClick={() => setRating(star)}
-                                            className={`text-2xl focus:outline-none transition-transform hover:scale-110 ${rating >= star ? 'text-yellow-400' : 'text-gray-300'
+                                            onClick={handleFeedbackSubmit}
+                                            disabled={isSubmittingFeedback || rating === 0}
+                                            className={`px-4 py-2 rounded-md text-sm font-medium text-white ${isSubmittingFeedback || rating === 0
+                                                ? 'bg-gray-300 cursor-not-allowed'
+                                                : 'bg-indigo-600 hover:bg-indigo-700'
                                                 }`}
                                         >
-                                            ★
+                                            {isSubmittingFeedback ? '제출 중...' : '피드백 보내기'}
                                         </button>
-                                    ))}
-                                    <span className="text-sm text-gray-500 ml-2">
-                                        {rating > 0 ? `${rating}점` : '별점을 선택해주세요'}
-                                    </span>
+                                    </div>
                                 </div>
-                                <textarea
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 placeholder:text-gray-400"
-                                    placeholder="좋았던 점이나 아쉬웠던 점을 자유롭게 남겨주세요 (선택사항)"
-                                    rows={3}
-                                    value={comment}
-                                    onChange={(e) => setComment(e.target.value)}
-                                />
-                                <div className="flex justify-end">
-                                    <button
-                                        onClick={handleFeedbackSubmit}
-                                        disabled={isSubmittingFeedback || rating === 0}
-                                        className={`px-4 py-2 rounded-md text-sm font-medium text-white ${isSubmittingFeedback || rating === 0
-                                            ? 'bg-gray-300 cursor-not-allowed'
-                                            : 'bg-indigo-600 hover:bg-indigo-700'
-                                            }`}
-                                    >
-                                        {isSubmittingFeedback ? '제출 중...' : '피드백 보내기'}
-                                    </button>
+                            ) : (
+                                <div className="text-center py-4 text-green-600 bg-green-50 rounded-lg">
+                                    <p className="font-medium">✓ 소중한 의견 감사합니다!</p>
+                                    <p className="text-sm mt-1">다음 학습 콘텐츠 생성에 반영하겠습니다.</p>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-4 text-green-600 bg-green-50 rounded-lg">
-                                <p className="font-medium">✓ 소중한 의견 감사합니다!</p>
-                                <p className="text-sm mt-1">다음 학습 콘텐츠 생성에 반영하겠습니다.</p>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            )}
+                        </div>
+                    )
+                }
 
 
                 {/* Navigation Buttons */}
@@ -453,7 +543,7 @@ export default function ChapterPage() {
                         </button>
                     )}
                 </div>
-            </main>
+            </main >
 
             <SurveyModal
                 isOpen={showSurvey}
@@ -463,6 +553,6 @@ export default function ChapterPage() {
                 }}
                 isGenerating={isLoading}
             />
-        </div>
+        </div >
     );
 }

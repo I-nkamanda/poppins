@@ -17,7 +17,7 @@
  */
 
 import axios from 'axios';
-import type { GenerateRequest, StudyMaterialResponse, CourseResponse, ChapterContent, ChapterRequest, QuizGradingRequest, QuizGradingResponse, ObjectivesResponse, FeedbackRequest, CourseListItem } from '../types';
+import type { GenerateRequest, StudyMaterialResponse, CourseResponse, ChapterContent, ChapterRequest, QuizGradingRequest, QuizGradingResponse, ObjectivesResponse, FeedbackRequest, CourseListItem, QuizResultListResponse } from '../types';
 
 /**
  * 백엔드 API 기본 URL
@@ -188,4 +188,11 @@ export const saveUserPreference = async (preferences: {
     desired_depth: string;
 }): Promise<void> => {
     await axios.post(`${API_BASE_URL}/user/preferences`, preferences);
+};
+
+export const getQuizResults = async (skip: number = 0, limit: number = 50): Promise<QuizResultListResponse> => {
+    const response = await axios.get(`${API_BASE_URL}/quiz-results`, {
+        params: { skip, limit }
+    });
+    return response.data;
 };

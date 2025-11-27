@@ -253,22 +253,28 @@ class ExerciseResponse(BaseModel):
 
 class QuizItem(BaseModel):
     """
-    개별 퀴즈 문제 모델
-    
-    Attributes:
-        quiz (str): 주관식 서술형 퀴즈 문제
-            예: "리스트와 튜플의 차이점을 설명하세요."
+    개별 퀴즈 문제 모델 (주관식 - 심화 학습용)
     """
     quiz: str
 
+class MultipleChoiceQuizItem(BaseModel):
+    """
+    객관식 퀴즈 문제 모델
+    """
+    question: str
+    options: List[str]
+    answer: str
+    explanation: str
 
 class QuizResponse(BaseModel):
     """
-    퀴즈 응답 모델
-    
-    Attributes:
-        quizes (List[QuizItem]): 퀴즈 문제 목록
-            일반적으로 3개의 문제가 포함됨
+    객관식 퀴즈 응답 모델
+    """
+    quizes: List[MultipleChoiceQuizItem]
+
+class AdvancedLearningResponse(BaseModel):
+    """
+    심화 학습(주관식 퀴즈) 응답 모델
     """
     quizes: List[QuizItem]
 
@@ -296,6 +302,7 @@ class ChapterContent(BaseModel):
     concept: ConceptResponse
     exercise: ExerciseResponse
     quiz: QuizResponse
+    advanced_learning: AdvancedLearningResponse
 
 
 class StudyMaterialResponse(BaseModel):
@@ -339,6 +346,23 @@ class FeedbackRequest(BaseModel):
     chapter_title: str
     rating: int  # 1-5
     comment: Optional[str] = None
+
+
+class QuizResultItem(BaseModel):
+    id: int
+    chapter_title: str
+    score: int
+    weak_points: str  # JSON string
+    correct_points: Optional[str] = None # JSON string
+    feedback: Optional[str] = None
+    user_answer: Optional[str] = None
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+class QuizResultListResponse(BaseModel):
+    results: List[QuizResultItem]
 
 
 # 메인 API 엔드포인트
@@ -625,53 +649,63 @@ async def generate_chapter_content_only(request: ChapterRequest, db: Session = D
         if learning_context:
             logger.info(f"학습 컨텍스트 적용: {len(learning_context)} chars")
 
-        # 병렬로 생성 (개념, 실습, 퀴즈)
-        results = await asyncio.gather(
-            generator.generate_concept(
-                course_title=request.course_title,
-                course_desc=request.course_description,
-                chapter_title=request.chapter_title,
-                chapter_desc=request.chapter_description,
-                learning_context=learning_context
-            ),
-            generator.generate_exercise(
-                course_title=request.course_title,
-                course_desc=request.course_description,
-                chapter_title=request.chapter_title,
-                chapter_desc=request.chapter_description,
-                learning_context=learning_context
-            ),
-            generator.generate_quiz(
-                course_title=request.course_title,
-                chapter_title=request.chapter_title,
-                chapter_desc=request.chapter_description,
-                course_prompt=request.course_title,
-                learning_context=learning_context
-            ),
-            return_exceptions=True,
+        # 4. 콘텐츠 생성 (병렬 실행)
+        concept_task = generator.generate_concept(
+            request.course_title, request.course_description,
+            request.chapter_title, request.chapter_description,
+            learning_context
+        )
+        exercise_task = generator.generate_exercise(
+            request.course_title, request.course_description,
+            request.chapter_title, request.chapter_description,
+            learning_context
+        )
+        quiz_task = generator.generate_quiz(
+            request.course_title, request.chapter_title,
+            request.chapter_description, request.course_description,
+            learning_context
+        )
+        advanced_task = generator.generate_advanced_learning(
+            request.course_title, request.chapter_title,
+            request.chapter_description, request.course_description,
+            learning_context
         )
 
-        # 각 결과 확인 및 에러 처리 (헬퍼 함수 사용 - 중복 제거)
-        concept_data, exercise_data, quiz_data = results
-        validate_async_results(
-            results=results,
-            operation_names=["개념 생성", "실습 생성", "퀴즈 생성"]
-        )
+        # 모든 태스크 병렬 실행
+        results = await asyncio.gather(concept_task, exercise_task, quiz_task, advanced_task, return_exceptions=True)
+
+        concept_data, exercise_data, quiz_data, advanced_data = results
+
+        # 에러 처리
+        if isinstance(concept_data, Exception):
+            logger.error(f"Concept generation failed: {concept_data}")
+            concept_data = {"title": "Error", "description": "Failed to generate concept", "contents": "Error occurred."}
+        
+        if isinstance(exercise_data, Exception):
+            logger.error(f"Exercise generation failed: {exercise_data}")
+            exercise_data = {"title": "Error", "description": "Failed to generate exercise", "contents": "Error occurred."}
+            
+        if isinstance(quiz_data, Exception):
+            logger.error(f"Quiz generation failed: {quiz_data}")
+            quiz_data = {"quizes": []}
+
+        if isinstance(advanced_data, Exception):
+            logger.error(f"Advanced learning generation failed: {advanced_data}")
+            advanced_data = {"title": "Error", "description": "Failed to generate advanced learning", "contents": "Error occurred."}
 
         logger.info(f"챕터 콘텐츠 생성 완료: {request.chapter_title}")
 
-        # Chapter 객체 생성
-        chapter_info = Chapter(
-            chapterId=0,  # ID는 프론트엔드 컨텍스트에 있음
-            chapterTitle=request.chapter_title,
-            chapterDescription=request.chapter_description,
-        )
-
+        # 5. 응답 생성
         result = ChapterContent(
-            chapter=chapter_info,
+            chapter=Chapter(
+                chapterId=0,  # 임시 ID (실제 DB 연동 시 변경)
+                chapterTitle=request.chapter_title,
+                chapterDescription=request.chapter_description
+            ),
             concept=ConceptResponse(**concept_data),
             exercise=ExerciseResponse(**exercise_data),
-            quiz=QuizResponse(**quiz_data)
+            quiz=QuizResponse(**quiz_data),
+            advanced_learning=AdvancedLearningResponse(**advanced_data)
         )
 
         # 캐시에 저장
@@ -788,12 +822,20 @@ async def download_chapter(request: ChapterRequest):
 
 ---
 
-## ❓ 퀴즈
+## ❓ 퀴즈 (객관식)
 
 """
 
     for idx, quiz_item in enumerate(content.quiz.quizes, 1):
-        markdown += f"### 문제 {idx}\n\n{quiz_item.quiz}\n\n---\n\n"
+        markdown += f"### 문제 {idx}. {quiz_item.question}\n\n"
+        for opt in quiz_item.options:
+            markdown += f"- {opt}\n"
+        markdown += f"\n**정답:** {quiz_item.answer}\n\n"
+        markdown += f"**해설:** {quiz_item.explanation}\n\n---\n\n"
+
+    markdown += "## 📝 심화 학습 (주관식)\n\n"
+    for idx, adv_item in enumerate(content.advanced_learning.quizes, 1):
+        markdown += f"### 심화 문제 {idx}\n\n{adv_item.quiz}\n\n---\n\n"
 
     # 파일명 생성: 특수문자 제거 및 공백을 언더스코어로 변경
     import re
@@ -840,6 +882,9 @@ async def grade_quiz(request: QuizGradingRequest, db: Session = Depends(get_db))
                 chapter_title=request.chapter_title,
                 score=grading_result.get("score", 0),
                 weak_points=json.dumps(grading_result.get("improvements", []), ensure_ascii=False),
+                correct_points=json.dumps(grading_result.get("correct_points", []), ensure_ascii=False),
+                feedback=grading_result.get("feedback", ""),
+                user_answer=request.answer,
                 timestamp=datetime.now(timezone.utc)
             )
             db.add(quiz_result)
@@ -981,6 +1026,14 @@ class CourseListItem(BaseModel):
     topic: str
     description: str
     level: str
+    
+@app.get("/quiz-results", response_model=QuizResultListResponse)
+def get_quiz_results(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)):
+    """
+    사용자의 퀴즈 채점 결과 목록을 조회합니다.
+    """
+    results = db.query(QuizResult).order_by(QuizResult.timestamp.desc()).offset(skip).limit(limit).all()
+    return {"results": results}
     created_at: str
     chapter_count: int
     completed_chapters: int

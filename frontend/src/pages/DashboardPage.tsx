@@ -79,7 +79,7 @@ export default function DashboardPage() {
     const handleDelete = async (e: React.MouseEvent, id: number) => {
         e.preventDefault(); // Link의 기본 네비게이션 동작 방지
         e.stopPropagation(); // 이벤트 버블링 중지 (부모 Link로 전파 방지)
-        
+
         // 사용자 확인
         if (!window.confirm('정말 이 코스를 삭제하시겠습니까? 복구할 수 없습니다.')) {
             return; // 취소 시 함수 종료
@@ -127,12 +127,20 @@ export default function DashboardPage() {
                         <span className="text-2xl">🎓</span>
                         <h1 className="text-xl font-bold text-gray-900">PopPins II</h1>
                     </div>
-                    <Link
-                        to="/courses/new"
-                        className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
-                    >
-                        + 새로운 교육과정 생성
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <Link
+                            to="/quiz-results"
+                            className="text-gray-600 hover:text-gray-900 font-medium text-sm"
+                        >
+                            나의 퀴즈 답변
+                        </Link>
+                        <Link
+                            to="/courses/new"
+                            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors shadow-sm"
+                        >
+                            + 새로운 교육과정 생성
+                        </Link>
+                    </div>
                 </div>
             </header>
 

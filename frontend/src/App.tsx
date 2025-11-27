@@ -31,6 +31,8 @@ import ChapterPage from './pages/ChapterPage';
 import ObjectivesPage from './pages/ObjectivesPage';
 import DashboardPage from './pages/DashboardPage';
 
+import { QuizResultsPage } from './pages/QuizResultsPage';
+
 function App() {
   return (
     <BrowserRouter>
@@ -39,20 +41,23 @@ function App() {
           {/* 대시보드 - 최근 학습 목록 */}
           <Route path="/" element={<DashboardPage />} />
           <Route path="/dashboard" element={<DashboardPage />} /> {/* 명시적 라우트 */}
-          
+
           {/* 새 코스 생성 - 주제 입력 화면 */}
           <Route path="/courses/new" element={<HomePage />} />
-          
+
           {/* 학습 목표 선택 화면 */}
           <Route path="/objectives" element={<ObjectivesPage />} />
-          
+
           {/* 커리큘럼 화면 - 챕터 목록 표시 */}
           <Route path="/result" element={<ResultPage />} /> {/* 레거시 지원 */}
           <Route path="/courses/:courseId" element={<ResultPage />} />
-          
+
           {/* 챕터 상세 화면 - 개념/실습/퀴즈 표시 */}
           <Route path="/chapter/:chapterId" element={<ChapterPage />} /> {/* 레거시 지원 */}
           <Route path="/courses/:courseId/chapters/:chapterId" element={<ChapterPage />} />
+
+          {/* 퀴즈 결과 목록 화면 */}
+          <Route path="/quiz-results" element={<QuizResultsPage />} />
         </Routes>
       </div>
     </BrowserRouter>

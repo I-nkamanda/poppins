@@ -24,12 +24,23 @@ export interface Exercise {
     contents: string;
 }
 
-export interface QuizItem {
-    quiz: string;
+export interface MCQItem {
+    question: string;
+    options: string[];
+    answer: string;
+    explanation: string;
 }
 
 export interface Quiz {
-    quizes: QuizItem[];
+    quizes: MCQItem[];
+}
+
+export interface AdvancedItem {
+    quiz: string;
+}
+
+export interface AdvancedLearning {
+    quizes: AdvancedItem[];
 }
 
 export interface ChapterContent {
@@ -37,6 +48,7 @@ export interface ChapterContent {
     concept: Concept;
     exercise: Exercise;
     quiz: Quiz;
+    advanced_learning: AdvancedLearning;
 }
 
 export interface StudyMaterialResponse {
@@ -105,4 +117,19 @@ export interface CourseListItem {
     chapter_count: number;
     completed_chapters: number;
     progress: number;
+}
+
+export interface QuizResultItem {
+    id: number;
+    chapter_title: string;
+    score: number;
+    weak_points: string; // JSON string
+    correct_points?: string; // JSON string
+    feedback?: string;
+    user_answer?: string;
+    timestamp: string;
+}
+
+export interface QuizResultListResponse {
+    results: QuizResultItem[];
 }

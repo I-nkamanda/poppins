@@ -74,6 +74,9 @@ class QuizResult(Base):
     chapter_title = Column(String, index=True)
     score = Column(Integer)  # 0-100 점수
     weak_points = Column(Text)  # JSON string of weak points
+    correct_points = Column(Text, nullable=True)  # JSON string of correct points
+    feedback = Column(Text, nullable=True)  # General feedback text
+    user_answer = Column(Text, nullable=True)  # 사용자 제출 답안
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class UserFeedback(Base):
