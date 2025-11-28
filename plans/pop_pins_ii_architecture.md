@@ -178,13 +178,14 @@ pop_pins_2/
 | GET | `/health` | 서버 상태 확인 | ✅ |
 
 **핵심 함수**:
-- `initialize_rag_vector_db()`: FAISS 벡터 DB 초기화
+- `initialize_rag_vector_db()`: FAISS 벡터 DB 초기화 (Semantic Chunking)
 - `search_rag_context()`: RAG 컨텍스트 검색
 - `generate_learning_objectives()`: 학습 목표 생성 (Retry Logic)
 - `generate_course()`: 커리큘럼 생성 및 DB 저장
 - `generate_concept()`: 개념 정리 생성
 - `generate_exercise()`: 실습 과제 생성
-- `generate_quiz()`: 퀴즈 생성
+- `generate_quiz()`: 객관식 퀴즈 5개 생성 (MCQ)
+- `generate_advanced_learning()`: 주관식 문제 3개 생성
 
 ---
 
@@ -208,7 +209,8 @@ model = genai.GenerativeModel(
 - **CourseMaker**: 커리큘럼 설계 전문가
 - **ConceptMaker**: 개념 정리 전문가 (1000~1200자, Markdown)
 - **ExerciseMaker**: 실습 문제 출제자 (3개 문제)
-- **QuizMaker**: 평가 문제 출제자 (3개 주관식)
+- **QuizMaker**: 객관식 평가 문제 출제자 (5개 4지선다형)
+- **AdvancedLearningMaker**: 주관식 심화 문제 출제자 (3개 서술형)
 
 **응답 형식**: JSON
 
@@ -236,9 +238,17 @@ PDF 파일
     ↓
 PyPDFLoader (텍스트 추출)
     ↓
-RecursiveCharacterTextSplitter
- - chunk_size: 1000
- - chunk_overlap: 200
+Page Filtering & Cleaning
+ - TOC, Index, Cover pages 제거
+ - 불필요한 공백 제거
+    ↓
+SemanticChunker (의미 기반 분할)
+ - embedding 모델로 의미적 경계 파악
+ - 문맥 보존 향상
+    ↓
+Metadata Enhancement
+ - Section 헤더 자동 추출
+ - 페이지 및 파일 정보
     ↓
 GoogleGenerativeAIEmbeddings
  - model: text-embedding-004
@@ -253,6 +263,7 @@ Similarity Search (Top-K=3)
 - `file_name`: 파일명
 - `source_file`: 파일 경로
 - `page`: 페이지 번호
+- `section`: 섹션 헤더 (자동 추출)
 
 ---
 
@@ -297,36 +308,36 @@ sequenceDiagram
     User->>Frontend: 챕터 선택
     Frontend->>FastAPI: POST /generate-chapter-content
     
-    Note over FastAPI: 2. Content Generation
+    Note over FastAPI: 2. Content Generation (병렬)
     FastAPI->>RAG: 관련 내용 검색
     RAG-->>FastAPI: 관련 문서
-    FastAPI->>Gemini: 콘텐츠(개념/실습/퀴즈) 생성
-    Gemini-->>FastAPI: Content Markdown
+    FastAPI->>Gemini: 개념/실습/MCQ/고급학습 생성
+    Gemini-->>FastAPI: Content (Markdown + JSON)
     FastAPI->>DB: **챕터 콘텐츠 업데이트**
     
     FastAPI-->>Frontend: ChapterContent
-    Frontend-->>User: 학습 자료 표시
+    Frontend-->>User: 학습 자료 표시 (탭 UI)
 ```
 
 ---
 
-## 🗄️ Database Architecture (✅ 2차 완료)
+## 🗄️ Database Architecture (✅ 완료)
 
 ### SQLite Schema
 
-**Course** (New):
+**Course**:
 - `id`: PK
 - `topic`: 주제
 - `description`: 설명
 - `level`: 난이도
 - `created_at`: 생성 시간
 
-**Chapter** (New):
+**Chapter**:
 - `id`: PK
 - `course_id`: FK (Course.id)
 - `title`: 챕터 제목
 - `description`: 챕터 설명
-- `content`: 본문 내용 (Markdown)
+- `content`: 본문 내용 (JSON: concept, exercise, quiz, advanced_learning)
 - `is_completed`: 완료 여부
 
 **GenerationLog**:
@@ -335,13 +346,18 @@ sequenceDiagram
 - `topic`: 주제
 - `prompt_context`: 프롬프트 내용
 - `generated_content`: 생성된 JSON
+- `model_name`: 사용된 AI 모델
+- `latency_ms`: 생성 소요 시간 (밀리초)
 - `timestamp`: 생성 시간
 
 **QuizResult**:
 - `id`: PK
 - `chapter_title`: 챕터명
-- `score`: 점수
-- `weak_points`: 취약점 분석
+- `score`: 점수 (0-100)
+- `weak_points`: 취약점 분석 (JSON)
+- `correct_points`: 잘한 점 (JSON)
+- `feedback`: 전체 피드백
+- `user_answer`: 사용자 제출 답안
 - `timestamp`: 채점 시간
 
 **UserFeedback**:
@@ -350,6 +366,13 @@ sequenceDiagram
 - `rating`: 별점 (1-5)
 - `comment`: 코멘트
 - `timestamp`: 제출 시간
+
+**UserPreference**:
+- `id`: PK
+- `learning_goal`: 학습 목표
+- `learning_style`: 학습 스타일
+- `desired_depth`: 원하는 학습 깊이
+- `created_at`: 저장 시간
 
 **상태**: ✅ Dashboard & Persistence 구현 완료
 
@@ -443,10 +466,12 @@ graph LR
 | Layer | Technology | Version | Status |
 |-------|-----------|---------|--------|
 | Frontend | React + TypeScript + Vite | 19 | ✅ 완료 |
+| Standalone | Tauri + React | 2.x | ✅ 완료 |
 | Backend | FastAPI | 0.104+ | ✅ 완료 |
 | AI | Google Gemini | 2.5 Flash | ✅ 완료 |
 | Embedding | text-embedding-004 | - | ✅ 완료 |
-| Vector DB | FAISS (Gemini) | python_textbook_gemini_db | ✅ 완료 |
+| Vector DB | FAISS (Gemini) | python_textbook_gemini_db_semantic | ✅ 완료 |
+| Chunking | SemanticChunker | LangChain Experimental | ✅ 완료 |
 | Database | SQLite (Persistence) | - | ✅ 완료 |
 | Deployment | Local Development | - | ✅ 완료 |
 
@@ -462,8 +487,8 @@ graph LR
 
 ---
 
-**문서 버전**: 1.10.0  
-**최종 수정일**: 2025-11-26  
-**상태**: 현재 아키텍처 문서화 완료 (Backend + Frontend + DB + Persistence)  
-**다음 단계**: 배포 파이프라인 구축
+**문서 버전**: 2.1.0  
+**최종 수정일**: 2025-11-28  
+**상태**: 현재 아키텍처 문서화 완료 (Backend + Frontend + DB + Persistence + Standalone App)  
+**다음 단계**: 배포 파이프라인 구축, 모바일 앱 개발 검토
 
