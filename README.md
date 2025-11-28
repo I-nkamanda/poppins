@@ -25,20 +25,68 @@
 - Node.js 18+
 - Gemini API 키 ([Google AI Studio](https://makersuite.google.com/app/apikey)에서 발급)
 
-### 1. 환경 변수 설정
+---
 
-`app/.env` 파일을 생성하고 다음 내용을 추가하세요:
+### ⚡ 빠른 설치 및 실행 (필수 단계만)
 
-```env
-GEMINI_API_KEY=your-gemini-api-key-here
-USE_RAG=true
-VECTOR_DB_PATH=../python_textbook_gemini_db_semantic
-VECTOR_DB_EMBEDDING_MODEL=gemini
+GitHub에서 클론하여 실행하는 전체 과정입니다:
+
+#### 1. 저장소 클론
+```bash
+git clone <repository-url>
+cd pop_pins_2
 ```
 
-### 1-1. RAG 벡터 DB 생성 (선택사항)
+#### 2. 환경 변수 설정 (필수)
+```bash
+# app/.env 파일 생성
+cp app/.env.example app/.env
 
-RAG 기능을 사용하려면 먼저 벡터 DB를 생성해야 합니다:
+# 편집기로 app/.env 열어서 API 키 입력
+# GEMINI_API_KEY=your-actual-gemini-api-key-here
+```
+
+> **⚠️ 중요**: API 키 없이는 실행되지 않습니다!
+
+#### 3. 백엔드 설정 및 실행 (필수)
+```bash
+# Python 가상환경 생성 (권장)
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+
+# 의존성 설치
+cd app
+pip install -r requirements.txt
+
+# 서버 실행
+uvicorn main:app --port 8001 --reload
+```
+
+서버가 실행되면 `http://localhost:8001/docs`에서 API 문서를 확인할 수 있습니다.
+
+#### 4. 프론트엔드 설정 및 실행 (필수)
+**새 터미널을 열어서** 다음을 실행하세요:
+
+```bash
+cd frontend
+
+# Node.js 패키지 설치 (필수!)
+npm install
+
+# 개발 서버 실행
+npm run dev
+```
+
+브라우저에서 `http://localhost:5173`을 열면 애플리케이션을 사용할 수 있습니다.
+
+---
+
+### 📦 선택 사항: RAG 벡터 DB 생성
+
+> **참고**: 벡터 DB는 이미 프로젝트에 포함되어 있으므로 **대부분의 경우 이 단계는 건너뛸 수 있습니다.** 새로운 PDF 교재를 추가하거나 벡터 DB를 재생성하고 싶을 때만 실행하세요.
+
+RAG 기능을 사용하려면 벡터 DB가 필요합니다:
 
 ```bash
 cd "RAG vector generator"
@@ -55,27 +103,9 @@ python python_textbook_rag_generator.py --db-name python_textbook_gemini_db_sema
 
 자세한 사용법은 [`RAG vector generator/README.md`](./RAG%20vector%20generator/README.md)를 참고하세요.
 
-### 2. Backend 실행
+---
 
-```bash
-cd app
-pip install -r requirements.txt
-uvicorn app.main:app --port 8001 --reload
-```
-
-서버가 실행되면 `http://localhost:8001/docs`에서 API 문서를 확인할 수 있습니다.
-
-### 3. Frontend 실행
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-브라우저에서 `http://localhost:5173`을 열면 애플리케이션을 사용할 수 있습니다.
-
-### 4. 사용하기
+### 🎯 사용 방법
 
 1. 학습 주제, 난이도, 챕터 수를 입력
 2. "학습 자료 생성하기" 버튼 클릭

@@ -76,4 +76,4 @@ pyinstaller --onefile --windowed standalone/launcher.py
 
 ---
 
-**Created**: 2025-11-27
+**버전**: v2.1.0 | **최종 업데이트**: 2025-11-28
