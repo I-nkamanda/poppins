@@ -2,16 +2,16 @@
 
 **프로젝트**: PopPins II (어딧세이 가제)  
 **문서 타입**: Architecture Diagram & System Design  
-**버전**: 1.10.0  
+**버전**: 2.1.0  
 **작성일**: 2025-11-22  
 **작성자**: 이진걸  
-**최종 업데이트**: 2025-11-26
+**최종 업데이트**: 2025-11-28
 
 ---
 
 ## 📌 개요
 
-PopPins II는 AI 기반 PBL(Problem-Based Learning) 학습 자료 자동 생성 플랫폼으로, **FastAPI Backend**, **Google Gemini AI**, **FAISS Vector DB**를 핵심으로 하는 3-Layer Architecture입니다. v1.9.0에서는 **SQLite 기반의 영구 저장소(Persistence)**와 **대시보드(Dashboard)** 기능이 추가되었습니다.
+PopPins II는 AI 기반 PBL(Problem-Based Learning) 학습 자료 자동 생성 플랫폼으로, **FastAPI Backend**, **Google Gemini AI**, **FAISS Vector DB**를 핵심으로 하는 3-Layer Architecture입니다. v2.1.0에서는 **SQLite 기반 영구 저장소(Persistence)**, **대시보드(Dashboard)**, **객관식 퀴즈(MCQ)**, **고급 학습 섹션**, 그리고 **Tauri 기반 Standalone 데스크탑 앱**이 추가되었습니다.
 
 ---
 
@@ -24,6 +24,7 @@ graph TB
     subgraph "Client Layer"
         A[사용자]
         B[Frontend 웹앱<br/>React + Vite]
+        B2[Standalone 앱<br/>Tauri + React]
     end
     
     subgraph "Application Layer"
@@ -33,13 +34,15 @@ graph TB
     
     subgraph "AI & Data Layer"
         E[Google Gemini 2.5 Flash]
-        F[FAISS Vector DB]
+        F[FAISS Vector DB<br/>Semantic Chunking]
         G[PDF 교재]
         H[SQLite DB]
     end
     
     A -->|HTTP Request| B
+    A -->|Desktop App| B2
     B -->|API Call| D
+    B2 -->|API Call| D
     D --> C
     C -->|Generate Content| E
     C -->|Search Context| F
@@ -48,9 +51,12 @@ graph TB
     E -->|JSON Response| C
     C -->|Study Material| D
     D -->|API Response| B
+    D -->|API Response| B2
     B -->|Display| A
+    B2 -->|Display| A
     
     style B fill:#e1f5ff
+    style B2 fill:#d1f0ff
     style C fill:#fff4e6
     style E fill:#f3e5f5
     style F fill:#e8f5e9
@@ -92,8 +98,9 @@ src/
 - ✅ **영구 저장**: 새로고침 후에도 학습 데이터 유지
 - ✅ Lazy-Loading 커리큘럼 (빠른 초기 로드)
 - ✅ 학습 목표 선택 (기초/실무/심화)
-- ✅ 챕터별 상세 콘텐츠 로드
-- ✅ 퀴즈 AI 채점 기능
+- ✅ 챕터별 상세 콘텐츠 로드 (개념, 실습, 퀴즈, 고급 학습)
+- ✅ **객관식 퀴즈 (MCQ)**: 5개의 4지 선다형 문제와 즉각적인 피드백
+- ✅ **고급 학습**: 3개의 주관식 문제와 AI 채점 기능
 - ✅ 챕터 다운로드 (Markdown)
 - ✅ 피드백 제출 및 반영
 - ✅ 반응형 UI/UX
@@ -116,18 +123,30 @@ src/
 pop_pins_2/
 ├── app/                       # 백엔드 애플리케이션
 │   ├── main.py               # 메인 애플리케이션 (RAG 통합)
+│   ├── main(no RAG).py       # RAG 없는 레거시 버전
 │   ├── database.py           # DB 연결 설정
-│   ├── models.py             # DB 모델 (Course, Chapter, History, Feedback)
+│   ├── models.py             # DB 모델 (Course, Chapter, GenerationLog, QuizResult, UserFeedback, UserPreference)
 │   ├── services/
-│   │   ├── generator.py      # AI 생성 로직 (Retry Logic 포함)
+│   │   ├── generator.py      # AI 생성 로직 (Retry Logic, JSON Repair)
 │   │   └── scorm_service.py  # SCORM 패키지 생성 (v1.10.0)
 │   ├── .env                  # 환경 변수
-│   └── requirements.txt      # 의존성 (제거됨, 루트로 통합)
+│   └── requirements.txt      # Python 의존성 (제거됨, 루트로 통합)
 ├── frontend/                  # 프론트엔드 애플리케이션
 │   └── src/
 │       ├── pages/            # React 페이지 컴포넌트
 │       ├── components/       # 재사용 컴포넌트
 │       └── services/         # API 클라이언트
+├── standalone/                # [NEW] Tauri 데스크탑 앱
+│   ├── app/                  # 백엔드 (복사본)
+│   ├── frontend/             # Tauri + React
+│   ├── vector_db/            # 벡터 DB (복사본)
+│   ├── launcher.py           # Python 기반 실행 스크립트
+│   ├── setup.py              # 자동 구성 스크립트
+│   ├── README.md             # Standalone 가이드
+│   ├── QUICKSTART.md         # 빠른 시작 가이드
+│   ├── ARCHITECTURE.md       # 아키텍처 상세 설명
+│   ├── DEPLOYMENT.md         # 빌드 및 배포 가이드
+│   └── DIFFERENCES.md        # Web vs Standalone 비교
 ├── tests/                     # 테스트 파일 (v1.10.0 정리)
 │   ├── test_*.py             # 단위 및 통합 테스트
 │   └── conftest.py           # Pytest 설정
@@ -135,8 +154,7 @@ pop_pins_2/
 │   ├── rag/                  # RAG/Vector DB 도구
 │   ├── db/                   # 데이터베이스 관리 도구
 │   └── qa/                   # QA 및 개발 도구
-├── vector_db/                 # FAISS 벡터 DB
-│   └── python_textbook_gemini_db/
+├── python_textbook_gemini_db_semantic/  # FAISS 벡터 DB (Semantic Chunking)
 ├── requirements.txt           # Python 의존성 (통합됨)
 └── .gitignore                # Git 무시 파일
 ```
@@ -149,10 +167,11 @@ pop_pins_2/
 | GET | `/courses/{id}` | (New) 특정 코스 상세 조회 | ✅ |
 | POST | `/generate-objectives` | 학습 목표 3가지 제안 | ✅ |
 | POST | `/generate-course` | 커리큘럼 생성 및 DB 저장 | ✅ |
-| POST | `/generate-chapter-content` | 챕터 상세 내용 생성 및 DB 저장 | ✅ |
+| POST | `/generate-chapter-content` | 챕터 상세 내용 생성 (개념, 실습, MCQ, 고급학습) | ✅ |
 | POST | `/generate-study-material` | 학습 자료 일괄 생성 (하위 호환) | ✅ |
 | POST | `/download-chapter` | 챕터 Markdown 다운로드 | ✅ |
-| POST | `/grade-quiz` | 퀴즈 AI 채점 | ✅ |
+| POST | `/grade-quiz` | 주관식 퀴즈 AI 채점 | ✅ |
+| GET | `/quiz-results` | 퀴즈 채점 결과 목록 조회 | ✅ |
 | POST | `/feedback` | 사용자 피드백 저장 | ✅ |
 | GET | `/history` | 생성 이력 조회 | ✅ |
 | GET | `/` | API 정보 | ✅ |
